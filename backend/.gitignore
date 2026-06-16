@@ -1,0 +1,31 @@
+# ===================================
+# Git Ignore — RGMS Backend
+# ===================================
+
+# Maven build output
+target/
+*.class
+
+# Application secrets — NEVER commit
+application-dev.yml
+application-prod.yml
+application-staging.yml
+.env
+*.env
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
