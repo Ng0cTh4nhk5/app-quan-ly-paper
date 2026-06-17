@@ -1,7 +1,9 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import { RouterView } from 'vue-router'
+import Toast from 'primevue/toast'
 </script>
 
 <template>
-  <HelloWorld />
+  <RouterView />
+  <Toast position="bottom-right" />
 </template>

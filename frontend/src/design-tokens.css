@@ -1,0 +1,114 @@
+/**
+ * =====================================================
+ * RGMS Design Tokens — Profile 2: Tech-Forward SaaS
+ * Slate & Teal (Linear / Stripe / Vercel inspired)
+ * =====================================================
+ * ĐỂ ĐỔI DESIGN STYLE: Chỉ cần chỉnh sửa các biến trong :root này.
+ * Toàn bộ UI sẽ cập nhật tự động.
+ */
+
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); */
+
+:root {
+  /* ── COLOR PALETTE (OKLCH) ─────────────────────────────── */
+  /* Primary: Tech Slate Blue (Hue 250) */
+  --color-primary:           oklch(0.20 0.02 250);   /* Sidebar bg, heading text */
+  --color-primary-800:       oklch(0.28 0.02 250);   /* Sidebar hover bg */
+  --color-primary-700:       oklch(0.36 0.02 250);   /* Sidebar active item */
+
+  /* Accent: Emerald Teal (Hue 180) */
+  --color-accent:            oklch(0.60 0.12 180);   /* CTA buttons, active links */
+  --color-accent-hover:      oklch(0.55 0.12 180);   /* Button hover */
+  --color-accent-active:     oklch(0.45 0.12 180);   /* Button active/pressed */
+  --color-accent-focus-ring: oklch(0.80 0.12 180);   /* Focus ring */
+  --color-accent-disabled:   oklch(0.90 0.04 180);   /* Disabled CTA */
+  --color-accent-light:      oklch(0.97 0.02 180);   /* Mint tint — success bg, badge bg */
+
+  /* Neutrals (Hue 250) */
+  --color-bg:                oklch(0.99 0.00 0);     /* Page background (99% Lightness) */
+  --color-surface:           oklch(1.00 0.00 0);     /* Card, modal, table surface (100% Lightness) */
+  --color-surface-alt:       oklch(0.97 0.01 250);   /* Sidebar bg, table header, card alt */
+  
+  --color-text-primary:      oklch(0.15 0.02 250);   /* Headings (~15% L) */
+  --color-text-secondary:    oklch(0.35 0.02 250);   /* Body text, labels (~35% L) */
+  --color-text-muted:        oklch(0.55 0.02 250);   /* Placeholder, disabled (~55% L) */
+  
+  --color-border:            oklch(0.85 0.01 250);   /* All borders (~85% L) */
+  --color-border-strong:     oklch(0.75 0.01 250);   /* Dividers, separator */
+
+  /* Status Colors (Consistent Lightness and Chroma) */
+  /* L: ~0.95 for bg, ~0.45 for text, ~0.80 for border. Chroma ~0.12 for text */
+  --color-success-bg:        oklch(0.96 0.02 140);
+  --color-success-text:      oklch(0.45 0.12 140);
+  --color-success-border:    oklch(0.85 0.06 140);
+  
+  --color-warning-bg:        oklch(0.96 0.02 60);
+  --color-warning-text:      oklch(0.45 0.12 60);
+  --color-warning-border:    oklch(0.85 0.06 60);
+  
+  --color-error-bg:          oklch(0.96 0.02 25);
+  --color-error-text:        oklch(0.45 0.12 25);
+  --color-error-border:      oklch(0.85 0.06 25);
+  
+  --color-info-bg:           oklch(0.96 0.02 240);
+  --color-info-text:         oklch(0.45 0.12 240);
+  --color-info-border:       oklch(0.85 0.06 240);
+
+  /* Danger button */
+  --color-danger:            oklch(0.45 0.15 25);
+  --color-danger-hover:      oklch(0.35 0.15 25);
+
+  /* Neon accent for KPI */
+  --color-cyan:              oklch(0.70 0.12 220);
+  --color-cyber-green:       oklch(0.70 0.15 150);
+  --color-amber:             oklch(0.70 0.15 60);
+
+  /* ── TYPOGRAPHY ───────────────────────────────── */
+  --font-sans:   'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono:   'Consolas', 'SF Mono', monospace;
+
+  --text-display: 700 36px/1.1 var(--font-sans);
+  --text-h1:      700 26px/1.2 var(--font-sans);
+  --text-h2:      700 20px/1.3 var(--font-sans);
+  --text-h3:      600 16px/1.4 var(--font-sans);
+  --text-h4:      600 14px/1.4 var(--font-sans);
+  --text-body-lg: 400 15px/1.5 var(--font-sans);
+  --text-body:    400 13px/1.5 var(--font-sans);
+  --text-sm:      400 12px/1.4 var(--font-sans);
+  --text-caption: 500 11px/1.4 var(--font-sans);
+  --text-mono:    500 12px/1.4 var(--font-mono);
+
+  --letter-display: -0.04em;
+  --letter-h1:      -0.03em;
+  --letter-h2:      -0.02em;
+
+  /* ── SPACING (8px grid) ───────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── BORDER RADIUS ────────────────────────────── */
+  --radius-sm:  4px;
+  --radius-md:  6px;
+  --radius-lg:  8px;
+  --radius-xl:  12px;
+
+  /* ── SHADOWS ──────────────────────────────────── */
+  --shadow-sm:  0 1px 2px oklch(0.15 0.02 250 / 0.06);
+  --shadow-md:  0 4px 10px oklch(0.15 0.02 250 / 0.08);
+  --shadow-lg:  0 8px 24px oklch(0.15 0.02 250 / 0.10);
+
+  /* ── LAYOUT ───────────────────────────────────── */
+  --sidebar-width: 240px;
+  --topbar-height: 56px;
+
+  /* ── TRANSITIONS ──────────────────────────────── */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+}
