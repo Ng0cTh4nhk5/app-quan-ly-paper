@@ -23,7 +23,9 @@ const canGuiHoSo   = computed(() =>
   ['DRAFT', 'CHO_BO_SUNG_HO_SO', 'CHO_CHINH_SUA_THUYET_MINH'].includes(chiTiet.value?.trangThai)
 )
 const canBoSung    = computed(() => chiTiet.value?.trangThai === 'CHO_BO_SUNG_HO_SO')
-const canXemHopDong = computed(() => chiTiet.value?.trangThai === 'DANG_LAP_HOP_DONG')
+const canXemHopDong = computed(() =>
+  ['DANG_LAP_HOP_DONG', 'DANG_THUC_HIEN', 'DA_HOAN_THANH'].includes(chiTiet.value?.trangThai)
+)
 
 const isLoading = ref(false)
 async function guiHoSo() {
@@ -127,6 +129,17 @@ function getStepState(stepKey, currentStatus) {
           <strong>Cần bổ sung hồ sơ:</strong> P.NCKH yêu cầu bổ sung tài liệu.
           <button class="btn-link" @click="router.push(`/gv/de-tai/${chiTiet.id}/bo-sung`)">
             Bổ sung ngay →
+          </button>
+        </div>
+      </div>
+
+      <!-- Contract ready banner -->
+      <div v-if="chiTiet.trangThai === 'DANG_LAP_HOP_DONG'" class="info-banner mb-4">
+        <span>🎉</span>
+        <div>
+          <strong>Hợp đồng đã sẵn sàng!</strong> Đề tài được chấp thuận. Vui lòng xem và ký xác nhận hợp đồng.
+          <button class="btn-link" @click="router.push(`/gv/de-tai/${chiTiet.id}/hop-dong`)">
+            Ký hợp đồng →
           </button>
         </div>
       </div>

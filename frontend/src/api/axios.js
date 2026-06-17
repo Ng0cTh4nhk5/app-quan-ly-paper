@@ -98,6 +98,27 @@ if (BASE_URL === '__MOCK__') {
       mockData = updateTrangThai(id, 'DANG_PHAN_BIEN', user?.hoTen ?? 'NCKH', 'Lập tổ phản biện', { toPhanBien: members })
     }
 
+    // POST /de-tai/:id/upload (GV upload file)
+    if (method === 'post' && url.match(/\/de-tai\/\d+\/upload$/)) {
+      const id = url.split('/')[2]
+      const dt = getDeTaiById(id)
+      if (!dt) return Promise.reject({ response: { status: 404, data: { message: 'Không tìm thấy đề tài' } } })
+      const body = typeof config.data === 'string' ? JSON.parse(config.data) : (config.data ?? {})
+      const loai = body.loai ?? 'THUYET_MINH'
+      const fileName = body.fileName ?? `file-${Date.now()}.pdf`
+      dt.taiLieu = dt.taiLieu ?? []
+      dt.taiLieu.push({
+        id: Date.now(),
+        loai,
+        tenFile: fileName,
+        downloadUrl: '#',
+        size: '1.2 MB',
+        uploadedAt: new Date().toISOString(),
+      })
+      dt.updatedAt = new Date().toISOString()
+      mockData = JSON.parse(JSON.stringify(dt))
+    }
+
     // POST /de-tai/:id/nop-ket-qua-pb
     if (method === 'post' && url.match(/\/de-tai\/\d+\/nop-ket-qua-pb/)) {
       const id = url.split('/')[2]

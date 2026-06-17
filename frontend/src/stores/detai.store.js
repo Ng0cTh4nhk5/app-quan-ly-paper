@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/api/axios'
-import { useAuthStore } from './auth.store'
 
 export const useDetaiStore = defineStore('detai', () => {
   const danhSach = ref([])
@@ -9,7 +8,8 @@ export const useDetaiStore = defineStore('detai', () => {
   const loading  = ref(false)
   const error    = ref(null)
 
-  const deTaiDraft = computed(() => danhSach.value.filter(d => d.trangThai === 'DRAFT'))
+  const deTaiDraft     = computed(() => danhSach.value.filter(d => d.trangThai === 'DRAFT'))
+  const deTaiChoBoSung = computed(() => danhSach.value.filter(d => d.trangThai === 'CHO_BO_SUNG_HO_SO'))
 
   async function layDanhSach() {
     loading.value = true; error.value = null
@@ -44,12 +44,34 @@ export const useDetaiStore = defineStore('detai', () => {
     return res.data
   }
 
+  async function boSungHoSo(detaiId, payload) {
+    const res = await api.post(`/de-tai/${detaiId}/bo-sung`, payload)
+    _sync(detaiId, res.data)
+    return res.data
+  }
+
+  async function kyHopDong(detaiId) {
+    const res = await api.post(`/de-tai/${detaiId}/ky-hop-dong`)
+    _sync(detaiId, res.data)
+    return res.data
+  }
+
+  async function uploadFile(detaiId, file, loai = 'THUYET_MINH') {
+    const res = await api.post(`/de-tai/${detaiId}/upload`, { file, loai })
+    _sync(detaiId, res.data)
+    return res.data
+  }
+
   function _sync(id, updated) {
     const idx = danhSach.value.findIndex(d => d.id === parseInt(id))
     if (idx !== -1) danhSach.value[idx] = updated
     if (chiTiet.value?.id === parseInt(id)) chiTiet.value = updated
   }
 
-  return { danhSach, chiTiet, loading, error, deTaiDraft,
-           layDanhSach, layChiTiet, taoDeTai, guiHoSo }
+  return {
+    danhSach, chiTiet, loading, error,
+    deTaiDraft, deTaiChoBoSung,
+    layDanhSach, layChiTiet, taoDeTai,
+    guiHoSo, boSungHoSo, kyHopDong, uploadFile,
+  }
 })
