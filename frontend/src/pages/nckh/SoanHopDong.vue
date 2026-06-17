@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useNckhStore } from '@/stores/nckh.store'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/composables/useToast'
 import { PenTool, ArrowLeft } from '@lucide/vue'
 
 const route  = useRoute()

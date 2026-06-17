@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePBStore } from '@/stores/pb.store'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/composables/useToast'
 import api from '@/api/axios'
 import { CheckCircle, Edit2, XCircle, Send } from '@lucide/vue'
 

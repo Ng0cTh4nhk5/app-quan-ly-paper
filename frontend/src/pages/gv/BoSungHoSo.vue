@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDetaiStore } from '@/stores/detai.store'
 import api from '@/api/axios'
+import { useToast } from '@/composables/useToast'
 import { ClipboardList, AlertTriangle, Clock, FolderOpen, FileText, Send, ArrowLeft, X } from '@lucide/vue'
 
 const route  = useRoute()
@@ -12,6 +13,7 @@ const store  = useDetaiStore()
 const { chiTiet, loading } = storeToRefs(store)
 const submitting  = ref(false)
 const uploadFiles = ref([])
+const { add: toastAdd } = useToast()
 
 const form = reactive({
   moTaBoSung: '',
@@ -65,7 +67,7 @@ async function submit() {
     })
     router.push(`/gv/de-tai/${route.params.id}`)
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Gửi bổ sung thất bại.')
+    toastAdd({ severity: 'error', summary: 'Lỗi', detail: e.response?.data?.message ?? 'Gửi bổ sung thất bại.' })
   } finally {
     submitting.value = false
   }

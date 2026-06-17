@@ -1,8 +1,8 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDetaiStore } from '@/stores/detai.store'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/composables/useToast'
 import { KY_NCKH_LIST } from '@/mock/db.js'
 
 const router    = useRouter()

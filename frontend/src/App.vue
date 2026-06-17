@@ -1,9 +1,9 @@
 <script setup>
 import { RouterView } from 'vue-router'
-import Toast from 'primevue/toast'
+import ToastContainer from '@/components/ToastContainer.vue'
 </script>
 
 <template>
   <RouterView />
-  <Toast position="bottom-right" />
+  <ToastContainer />
 </template>

@@ -19,7 +19,7 @@ const DANG_XU_LY = [
 onMounted(() => store.layTatCa())
 
 const filtered = computed(() => inbox.value.filter(d => DANG_XU_LY.includes(d.trangThai)))
-function fmt(iso) { return new Date(iso).toLocaleDateString('vi-VN') }
+function fmt(iso) { return iso ? new Date(iso).toLocaleDateString('vi-VN') : '—' }
 </script>
 
 <template>
