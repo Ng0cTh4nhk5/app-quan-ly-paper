@@ -25,7 +25,7 @@
   --color-accent-light:      oklch(0.97 0.02 180);   /* Mint tint — success bg, badge bg */
 
   /* Neutrals (Hue 250) */
-  --color-bg:                oklch(0.99 0.00 0);     /* Page background (99% Lightness) */
+  --color-bg:                oklch(0.98 0.01 250);   /* Page background (#F8FAFC) */
   --color-surface:           oklch(1.00 0.00 0);     /* Card, modal, table surface (100% Lightness) */
   --color-surface-alt:       oklch(0.97 0.01 250);   /* Sidebar bg, table header, card alt */
   

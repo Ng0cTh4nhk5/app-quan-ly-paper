@@ -1,6 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { User, Building, Search, Info } from '@lucide/vue'
 
 const auth   = useAuthStore()
 const router = useRouter()
@@ -10,7 +11,7 @@ const DEMO_ACCOUNTS = [
     key: 'gv_a',
     label: 'Giảng Viên A',
     sub: 'TS. Nguyễn Văn Anh — Khoa CNTT',
-    icon: 'pi pi-user',
+    icon: User,
     role: 'Giảng viên',
     color: 'var(--color-accent)',
   },
@@ -18,7 +19,7 @@ const DEMO_ACCOUNTS = [
     key: 'gv_b',
     label: 'Giảng Viên B',
     sub: 'PGS. Trần Thị Bình — Khoa Toán',
-    icon: 'pi pi-user',
+    icon: User,
     role: 'Giảng viên',
     color: 'var(--color-accent)',
   },
@@ -26,7 +27,7 @@ const DEMO_ACCOUNTS = [
     key: 'nckh',
     label: 'Nhân viên P.NCKH',
     sub: 'CN. Lê Văn Cường',
-    icon: 'pi pi-building',
+    icon: Building,
     role: 'P.NCKH',
     color: 'var(--color-amber)',
   },
@@ -34,7 +35,7 @@ const DEMO_ACCOUNTS = [
     key: 'pb_1',
     label: 'Phản Biện 1',
     sub: 'TS. Phạm Quang Đức',
-    icon: 'pi pi-search',
+    icon: Search,
     role: 'Tổ Phản Biện',
     color: '#0284C7',
   },
@@ -42,7 +43,7 @@ const DEMO_ACCOUNTS = [
     key: 'pb_2',
     label: 'Phản Biện 2',
     sub: 'PGS. Vũ Thị Em',
-    icon: 'pi pi-search',
+    icon: Search,
     role: 'Tổ Phản Biện',
     color: '#0284C7',
   },
@@ -116,7 +117,7 @@ function loginAs(key) {
               @click="loginAs(acc.key)"
             >
               <div class="demo-avatar" :style="{ background: acc.color, color: '#fff' }">
-                <i :class="acc.icon"></i>
+                <component :is="acc.icon" :size="18" />
               </div>
               <div class="demo-info">
                 <div class="demo-name">{{ acc.label }}</div>
@@ -130,7 +131,7 @@ function loginAs(key) {
 
           <!-- Note -->
           <div class="login-note">
-            <span class="note-icon"><i class="pi pi-info-circle"></i></span>
+            <span class="note-icon"><Info :size="14" /></span>
             <span>Nhấn <kbd>F5</kbd> để reset toàn bộ dữ liệu về trạng thái ban đầu</span>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useNckhStore } from '@/stores/nckh.store'
 import { useToast } from 'primevue/usetoast'
 import { MOCK_USERS } from '@/mock/db.js'
 import StatusBadge from '@/components/StatusBadge.vue'
+import { CheckCircle, Edit3, ClipboardList, Users, FileText, X, ChevronLeft } from '@lucide/vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -80,7 +81,9 @@ function fmtM(n)  { return n?.toLocaleString('vi-VN') + ' đ' }
 
 <template>
   <div class="page-container">
-    <button class="btn btn-ghost btn-sm mb-4" @click="router.back()">← Quay lại</button>
+    <button class="btn btn-ghost btn-sm mb-4 flex items-center gap-2" @click="router.back()">
+      <ChevronLeft :size="16" /> Quay lại
+    </button>
 
     <div v-if="loading" class="skeleton" style="height:200px"></div>
 
@@ -95,12 +98,12 @@ function fmtM(n)  { return n?.toLocaleString('vi-VN') + ' đ' }
           <h1 class="page-title">{{ chiTiet.tenDeTai }}</h1>
         </div>
         <div class="action-bar">
-          <button v-if="canTiepNhan" class="btn btn-primary" @click="tiepNhan">✅ Tiếp nhận</button>
-          <button v-if="canYeuCauBoSung" class="btn btn-warning" @click="showYeuCauDialog = true"><i class="pi pi-list"></i> Yêu cầu bổ sung</button>
-          <button v-if="canLapPB" class="btn btn-secondary" @click="showPBDialog = true"><i class="pi pi-users"></i> Lập tổ PB</button>
-          <button v-if="canXetDuyetPB" class="btn btn-primary" @click="showXetDuyetDialog = true">📊 Kết quả PB</button>
-          <button v-if="canKyHopDong" class="btn btn-success" @click="kyHopDong">✍️ Ký hợp đồng</button>
-          <button v-if="chiTiet.trangThai === 'DANG_LAP_HOP_DONG'" class="btn btn-secondary" @click="router.push(`/nckh/de-tai/${chiTiet.id}/hop-dong`)">📄 Soạn HĐ</button>
+          <button v-if="canTiepNhan" class="btn btn-primary flex items-center gap-2" @click="tiepNhan"><CheckCircle :size="16" /> Tiếp nhận</button>
+          <button v-if="canYeuCauBoSung" class="btn btn-warning flex items-center gap-2" @click="showYeuCauDialog = true"><ClipboardList :size="16" /> Yêu cầu bổ sung</button>
+          <button v-if="canLapPB" class="btn btn-secondary flex items-center gap-2" @click="showPBDialog = true"><Users :size="16" /> Lập tổ PB</button>
+          <button v-if="canXetDuyetPB" class="btn btn-primary flex items-center gap-2" @click="showXetDuyetDialog = true"><ClipboardList :size="16" /> Kết quả PB</button>
+          <button v-if="canKyHopDong" class="btn btn-success flex items-center gap-2" @click="kyHopDong"><Edit3 :size="16" /> Ký hợp đồng</button>
+          <button v-if="chiTiet.trangThai === 'DANG_LAP_HOP_DONG'" class="btn btn-secondary flex items-center gap-2" @click="router.push(`/nckh/de-tai/${chiTiet.id}/hop-dong`)"><FileText :size="16" /> Soạn HĐ</button>
         </div>
       </div>
 
@@ -141,7 +144,7 @@ function fmtM(n)  { return n?.toLocaleString('vi-VN') + ' đ' }
         <div class="dialog">
           <div class="dialog-header">
             <h3>Yêu cầu bổ sung hồ sơ</h3>
-            <button class="dialog-close" @click="showYeuCauDialog = false">✕</button>
+            <button class="dialog-close" @click="showYeuCauDialog = false"><X :size="20" /></button>
           </div>
           <div class="dialog-body">
             <div class="form-group">
@@ -164,7 +167,7 @@ function fmtM(n)  { return n?.toLocaleString('vi-VN') + ' đ' }
         <div class="dialog">
           <div class="dialog-header">
             <h3>Lập tổ phản biện</h3>
-            <button class="dialog-close" @click="showPBDialog = false">✕</button>
+            <button class="dialog-close" @click="showPBDialog = false"><X :size="20" /></button>
           </div>
           <div class="dialog-body">
             <p class="text-muted text-sm mb-3">Chọn ít nhất 1 thành viên tổ phản biện:</p>
@@ -190,7 +193,7 @@ function fmtM(n)  { return n?.toLocaleString('vi-VN') + ' đ' }
         <div class="dialog">
           <div class="dialog-header">
             <h3>Nhập kết quả phản biện</h3>
-            <button class="dialog-close" @click="showXetDuyetDialog = false">✕</button>
+            <button class="dialog-close" @click="showXetDuyetDialog = false"><X :size="20" /></button>
           </div>
           <div class="dialog-body">
             <div class="form-group">

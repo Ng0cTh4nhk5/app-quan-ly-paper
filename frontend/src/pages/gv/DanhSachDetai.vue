@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { useDetaiStore } from '@/stores/detai.store'
 import StatusBadge from '@/components/StatusBadge.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { Plus, List, LayoutGrid, Calendar, Banknote, AlertTriangle, FileText } from '@lucide/vue'
 
 const store  = useDetaiStore()
 const router = useRouter()
@@ -69,8 +70,8 @@ function fmtMoney(n) {
         <h1 class="page-title">Đề tài của tôi</h1>
         <p class="page-subtitle">Quản lý toàn bộ đề tài nghiên cứu khoa học</p>
       </div>
-      <button class="btn btn-primary" @click="router.push('/gv/de-tai/tao-moi')">
-        ✚ Đăng ký đề tài
+      <button class="btn btn-primary btn-icon" @click="router.push('/gv/de-tai/tao-moi')">
+        <Plus size="16" /> Đăng ký đề tài
       </button>
     </div>
 
@@ -84,13 +85,13 @@ function fmtMoney(n) {
       </div>
       <div class="view-toggle">
         <button
-          class="view-btn" :class="{ active: viewMode === 'table' }"
+          class="view-btn flex items-center justify-center" :class="{ active: viewMode === 'table' }"
           @click="viewMode = 'table'" title="Bảng"
-        >☰</button>
+        ><List size="18" /></button>
         <button
-          class="view-btn" :class="{ active: viewMode === 'card' }"
+          class="view-btn flex items-center justify-center" :class="{ active: viewMode === 'card' }"
           @click="viewMode = 'card'" title="Thẻ"
-        >⊞</button>
+        ><LayoutGrid size="18" /></button>
       </div>
     </div>
 
@@ -100,7 +101,9 @@ function fmtMoney(n) {
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="alert alert-danger">⚠️ {{ error }}</div>
+    <div v-else-if="error" class="alert alert-danger flex items-center gap-2">
+      <AlertTriangle size="20" /> {{ error }}
+    </div>
 
     <!-- TABLE VIEW -->
     <div v-else-if="filtered.length && viewMode === 'table'" class="table-wrapper">
@@ -149,8 +152,8 @@ function fmtMoney(n) {
         <div class="project-card-title">{{ dt.tenDeTai }}</div>
         <div v-if="dt.tomTat" class="project-card-desc">{{ dt.tomTat }}</div>
         <div class="project-card-meta">
-          <span v-if="dt.kyNckh">📅 {{ dt.kyNckh }}</span>
-          <span v-if="dt.kinhPhi">💰 {{ fmtMoney(dt.kinhPhi) }}</span>
+          <span v-if="dt.kyNckh" class="flex items-center gap-1"><Calendar size="14" /> {{ dt.kyNckh }}</span>
+          <span v-if="dt.kinhPhi" class="flex items-center gap-1"><Banknote size="14" /> {{ fmtMoney(dt.kinhPhi) }}</span>
         </div>
         <!-- Progress -->
         <div class="card-progress">
@@ -178,7 +181,7 @@ function fmtMoney(n) {
     <!-- Empty state -->
     <div v-else-if="!loading" class="table-wrapper">
       <EmptyState
-        icon="📝"
+        :icon="FileText"
         title="Chưa có đề tài nào"
         message="Bắt đầu bằng cách đăng ký đề tài nghiên cứu đầu tiên của bạn."
         action="Đăng ký đề tài"

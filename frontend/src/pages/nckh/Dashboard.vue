@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useNckhStore } from '@/stores/nckh.store'
 import { useAuthStore } from '@/stores/auth.store'
 import StatusBadge from '@/components/StatusBadge.vue'
+import { Sparkles, Inbox, Settings, CheckCircle, List, TriangleAlert, CircleAlert, Star } from '@lucide/vue'
 
 const store  = useNckhStore()
 const auth   = useAuthStore()
@@ -18,10 +19,10 @@ const done      = computed(() => list.value.filter(d => d.trangThai === 'DA_HOAN
 const urgent    = computed(() => inbox.value.slice(0, 5))
 
 const stats = [
-  { icon: 'pi pi-inbox', label: 'Chờ xem xét',    key: 'inbox',     iconClass: 'stat-icon-amber' },
-  { icon: 'pi pi-cog', label: 'Đang xử lý',     key: 'inProcess', iconClass: 'stat-icon-blue'  },
-  { icon: 'pi pi-check-circle', label: 'Đã hoàn thành',  key: 'done',      iconClass: 'stat-icon-green' },
-  { icon: 'pi pi-list', label: 'Tổng hồ sơ',     key: 'total',     iconClass: 'stat-icon-teal'  },
+  { icon: Inbox, label: 'Chờ xem xét',    key: 'inbox',     iconClass: 'stat-icon-amber' },
+  { icon: Settings, label: 'Đang xử lý',     key: 'inProcess', iconClass: 'stat-icon-blue'  },
+  { icon: CheckCircle, label: 'Đã hoàn thành',  key: 'done',      iconClass: 'stat-icon-green' },
+  { icon: List, label: 'Tổng hồ sơ',     key: 'total',     iconClass: 'stat-icon-teal'  },
 ]
 
 const statValues = computed(() => ({
@@ -49,17 +50,17 @@ const greeting = computed(() => {
     <!-- Greeting -->
     <div class="greeting-row">
       <div>
-        <h1 class="greeting-title">{{ greeting }}, {{ auth.user?.hoTen?.split(' ').pop() }} <i class="pi pi-sparkles" style="color: var(--color-amber); font-size: 0.8em"></i></h1>
+        <h1 class="greeting-title">{{ greeting }}, {{ auth.user?.hoTen?.split(' ').pop() }} <Sparkles style="color: var(--color-amber);" :size="24" /></h1>
         <p class="greeting-sub">Tổng quan hồ sơ đề tài đang chờ xử lý tại Phòng NCKH.</p>
       </div>
       <button class="btn btn-primary" @click="router.push('/nckh/inbox')">
-        <i class="pi pi-inbox"></i> Xem hộp thư đến
+        <Inbox :size="16" /> Xem hộp thư đến
       </button>
     </div>
 
     <!-- Warning if inbox has items -->
     <div v-if="inbox.length > 0" class="warning-banner">
-      <span><i class="pi pi-exclamation-triangle"></i></span>
+      <span><TriangleAlert :size="24" /></span>
       <div>
         <strong>Có {{ inbox.length }} hồ sơ</strong> đang chờ xem xét.
         <button class="btn-link" @click="router.push('/nckh/inbox')">Xử lý ngay →</button>
@@ -69,7 +70,7 @@ const greeting = computed(() => {
     <!-- Stats -->
     <div class="stats-grid">
       <div v-for="s in stats" :key="s.label" class="stat-card">
-        <div class="stat-icon" :class="s.iconClass"><i :class="s.icon"></i></div>
+        <div class="stat-icon" :class="s.iconClass"><component :is="s.icon" :size="24" /></div>
         <div>
           <div class="stat-value">{{ statValues[s.key] }}</div>
           <div class="stat-label">{{ s.label }}</div>
@@ -82,7 +83,7 @@ const greeting = computed(() => {
       <!-- Priority Queue -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title"><i class="pi pi-exclamation-circle" style="color: var(--color-danger)"></i> Ưu tiên xử lý</h3>
+          <h3 class="card-title"><CircleAlert style="color: var(--color-danger)" :size="20" /> Ưu tiên xử lý</h3>
           <button class="btn btn-ghost btn-sm" @click="router.push('/nckh/inbox')">Xem tất cả →</button>
         </div>
 
@@ -91,7 +92,7 @@ const greeting = computed(() => {
         </div>
 
         <div v-else-if="urgent.length === 0" class="card-body empty-msg">
-          <span><i class="pi pi-star" style="font-size: 2rem; color: var(--color-amber)"></i></span>
+          <span><Star :size="32" style="color: var(--color-amber)" /></span>
           <p>Hộp thư đến trống. Không có hồ sơ nào cần xử lý.</p>
         </div>
 
@@ -123,7 +124,7 @@ const greeting = computed(() => {
             <button class="btn btn-ghost btn-sm" @click="router.push('/nckh/dang-xu-ly')">Chi tiết →</button>
           </div>
           <div v-if="inProcess.length === 0" class="card-body empty-msg">
-            <span><i class="pi pi-inbox" style="font-size: 2rem; color: var(--color-text-muted)"></i></span><p>Không có hồ sơ nào đang xử lý.</p>
+            <span><Inbox :size="32" style="color: var(--color-text-muted)" /></span><p>Không có hồ sơ nào đang xử lý.</p>
           </div>
           <div v-else class="recent-list">
             <div
@@ -144,14 +145,14 @@ const greeting = computed(() => {
           <div class="card-header"><h3 class="card-title">Thao tác nhanh</h3></div>
           <div class="quick-actions">
             <button class="quick-action-btn" @click="router.push('/nckh/inbox')">
-              <span class="qa-icon"><i class="pi pi-inbox"></i></span>
+              <span class="qa-icon"><Inbox :size="18" /></span>
               <div>
                 <div class="qa-title">Hộp thư đến</div>
                 <div class="qa-sub">{{ inbox.length }} hồ sơ chờ xem xét</div>
               </div>
             </button>
             <button class="quick-action-btn" @click="router.push('/nckh/dang-xu-ly')">
-              <span class="qa-icon"><i class="pi pi-cog"></i></span>
+              <span class="qa-icon"><Settings :size="18" /></span>
               <div>
                 <div class="qa-title">Đang xử lý</div>
                 <div class="qa-sub">{{ inProcess.length }} hồ sơ trong tiến trình</div>

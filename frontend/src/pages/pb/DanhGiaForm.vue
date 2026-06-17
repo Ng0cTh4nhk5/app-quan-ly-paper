@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePBStore } from '@/stores/pb.store'
 import { useToast } from 'primevue/usetoast'
 import api from '@/api/axios'
+import { CheckCircle, Edit2, XCircle, Send } from '@lucide/vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -21,6 +22,12 @@ const form = ref({
   nhanXet: '',
   deXuat: 'CHAP_THUAN',
 })
+
+const DE_XUAT_OPTS = [
+  { v: 'CHAP_THUAN', l: 'Chấp thuận', icon: CheckCircle },
+  { v: 'YEU_CAU_CHINH_SUA', l: 'Yêu cầu sửa', icon: Edit2 },
+  { v: 'TU_CHOI', l: 'Từ chối', icon: XCircle }
+]
 
 onMounted(async () => {
   loading.value = true
@@ -105,22 +112,26 @@ function scoreColor(s) {
               placeholder="Phân tích điểm mạnh, điểm yếu, và góc độ chuyên môn..."></textarea>
           </div>
 
-          <!-- Đề xuất -->
           <div class="form-group">
             <label class="form-label">Đề xuất</label>
             <div class="deXuat-group">
-              <label v-for="opt in [{ v:'CHAP_THUAN', l:'✅ Chấp thuận' }, { v:'YEU_CAU_CHINH_SUA', l:'✏️ Yêu cầu sửa' }, { v:'TU_CHOI', l:'❌ Từ chối' }]"
+              <label v-for="opt in DE_XUAT_OPTS"
                      :key="opt.v" class="deXuat-option" :class="{ active: form.deXuat === opt.v }">
                 <input type="radio" :value="opt.v" v-model="form.deXuat" hidden />
-                {{ opt.l }}
+                <div class="flex items-center justify-center gap-2">
+                  <component :is="opt.icon" :size="16" />
+                  <span>{{ opt.l }}</span>
+                </div>
               </label>
             </div>
           </div>
 
           <div class="form-actions">
             <button type="button" class="btn btn-secondary" @click="router.back()">Hủy</button>
-            <button type="submit" class="btn btn-primary" :disabled="submitting">
-              {{ submitting ? 'Đang nộp...' : '📨 Nộp kết quả' }}
+            <button type="submit" class="btn btn-primary flex items-center gap-2" :disabled="submitting">
+              <span v-if="submitting" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
+              <Send v-else :size="16" />
+              <span>{{ submitting ? 'Đang nộp...' : 'Nộp kết quả' }}</span>
             </button>
           </div>
         </form>

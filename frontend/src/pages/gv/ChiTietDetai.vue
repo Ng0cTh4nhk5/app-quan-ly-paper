@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDetaiStore } from '@/stores/detai.store'
 import StatusBadge from '@/components/StatusBadge.vue'
+import { CheckCircle, XCircle, Edit3, Send, Search, FileSignature, FlaskConical, Paperclip, FileText, AlertTriangle, PartyPopper } from '@lucide/vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -49,12 +50,12 @@ function fmtM(n) { return n?.toLocaleString('vi-VN') + ' đ' }
 
 // Status stepper config
 const STEPS = [
-  { key: 'DRAFT',               label: 'Bản nháp',    icon: '✏️' },
-  { key: 'CHO_PNCKH_XEM_XET',  label: 'Chờ P.NCKH', icon: '📤' },
-  { key: 'DANG_PHAN_BIEN',      label: 'Phản biện',   icon: '🔍' },
-  { key: 'DANG_LAP_HOP_DONG',   label: 'Hợp đồng',   icon: '📝' },
-  { key: 'DANG_THUC_HIEN',      label: 'Thực hiện',   icon: '🔬' },
-  { key: 'DA_HOAN_THANH',       label: 'Hoàn thành',  icon: '✅' },
+  { key: 'DRAFT',               label: 'Bản nháp',    icon: Edit3 },
+  { key: 'CHO_PNCKH_XEM_XET',  label: 'Chờ P.NCKH', icon: Send },
+  { key: 'DANG_PHAN_BIEN',      label: 'Phản biện',   icon: Search },
+  { key: 'DANG_LAP_HOP_DONG',   label: 'Hợp đồng',   icon: FileSignature },
+  { key: 'DANG_THUC_HIEN',      label: 'Thực hiện',   icon: FlaskConical },
+  { key: 'DA_HOAN_THANH',       label: 'Hoàn thành',  icon: CheckCircle },
 ]
 
 const STATUS_ORDER = STEPS.map(s => s.key)
@@ -73,8 +74,10 @@ function getStepState(stepKey, currentStatus) {
     <button class="btn btn-ghost btn-sm mb-4" @click="router.back()">← Quay lại danh sách</button>
 
     <!-- Toast -->
-    <div v-if="toast" class="inline-toast" :class="toast.type">
-      {{ toast.type === 'success' ? '✅' : '❌' }} {{ toast.msg }}
+    <div v-if="toast" class="inline-toast flex items-center gap-2" :class="toast.type">
+      <CheckCircle v-if="toast.type === 'success'" :size="16" />
+      <XCircle v-else :size="16" />
+      <span>{{ toast.msg }}</span>
     </div>
 
     <!-- Loading -->
@@ -98,47 +101,47 @@ function getStepState(stepKey, currentStatus) {
         <div class="action-bar">
           <button
             v-if="canBoSung"
-            class="btn btn-secondary"
+            class="btn btn-secondary flex items-center gap-2"
             @click="router.push(`/gv/de-tai/${chiTiet.id}/bo-sung`)"
           >
-            📎 Bổ sung hồ sơ
+            <Paperclip :size="16" /> Bổ sung hồ sơ
           </button>
           <button
             v-if="canXemHopDong"
-            class="btn btn-secondary"
+            class="btn btn-secondary flex items-center gap-2"
             @click="router.push(`/gv/de-tai/${chiTiet.id}/hop-dong`)"
           >
-            📄 Xem hợp đồng
+            <FileText :size="16" /> Xem hợp đồng
           </button>
           <button
             v-if="canGuiHoSo"
-            class="btn btn-primary"
+            class="btn btn-primary flex items-center gap-2"
             :disabled="isLoading"
             @click="guiHoSo"
           >
             <span v-if="isLoading" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
-            📤 Gửi hồ sơ tới P.NCKH
+            <Send v-else :size="16" /> Gửi hồ sơ tới P.NCKH
           </button>
         </div>
       </div>
 
       <!-- Warning if needs supplement -->
-      <div v-if="canBoSung" class="warning-banner mb-4">
-        <span>⚠️</span>
+      <div v-if="canBoSung" class="warning-banner mb-4 flex gap-3">
+        <AlertTriangle class="shrink-0" :size="20" />
         <div>
           <strong>Cần bổ sung hồ sơ:</strong> P.NCKH yêu cầu bổ sung tài liệu.
-          <button class="btn-link" @click="router.push(`/gv/de-tai/${chiTiet.id}/bo-sung`)">
+          <button class="btn-link ml-1" @click="router.push(`/gv/de-tai/${chiTiet.id}/bo-sung`)">
             Bổ sung ngay →
           </button>
         </div>
       </div>
 
       <!-- Contract ready banner -->
-      <div v-if="chiTiet.trangThai === 'DANG_LAP_HOP_DONG'" class="info-banner mb-4">
-        <span>🎉</span>
+      <div v-if="chiTiet.trangThai === 'DANG_LAP_HOP_DONG'" class="info-banner mb-4 flex gap-3">
+        <PartyPopper class="shrink-0" :size="20" />
         <div>
           <strong>Hợp đồng đã sẵn sàng!</strong> Đề tài được chấp thuận. Vui lòng xem và ký xác nhận hợp đồng.
-          <button class="btn-link" @click="router.push(`/gv/de-tai/${chiTiet.id}/hop-dong`)">
+          <button class="btn-link ml-1" @click="router.push(`/gv/de-tai/${chiTiet.id}/hop-dong`)">
             Ký hợp đồng →
           </button>
         </div>
@@ -151,7 +154,7 @@ function getStepState(stepKey, currentStatus) {
           class="stepper-step"
           :class="getStepState(step.key, chiTiet.trangThai)"
         >
-          <div class="stepper-dot">{{ step.icon }}</div>
+          <div class="stepper-dot"><component :is="step.icon" :size="16" /></div>
           <div class="stepper-label">{{ step.label }}</div>
         </div>
       </div>
@@ -261,25 +264,22 @@ function getStepState(stepKey, currentStatus) {
             <div class="card-header"><h3 class="card-title">Thao tác</h3></div>
             <div class="card-body" style="display:flex;flex-direction:column;gap:var(--space-2)">
               <button
-                v-if="canGuiHoSo" class="btn btn-primary w-full"
+                v-if="canGuiHoSo" class="btn btn-primary w-full flex items-center justify-center gap-2"
                 :disabled="isLoading" @click="guiHoSo"
-                style="justify-content:center"
               >
-                📤 Gửi hồ sơ tới P.NCKH
+                <Send :size="16" /> Gửi hồ sơ tới P.NCKH
               </button>
               <button
-                v-if="canBoSung" class="btn btn-secondary w-full"
+                v-if="canBoSung" class="btn btn-secondary w-full flex items-center justify-center gap-2"
                 @click="router.push(`/gv/de-tai/${chiTiet.id}/bo-sung`)"
-                style="justify-content:center"
               >
-                📎 Bổ sung hồ sơ
+                <Paperclip :size="16" /> Bổ sung hồ sơ
               </button>
               <button
-                v-if="canXemHopDong" class="btn btn-secondary w-full"
+                v-if="canXemHopDong" class="btn btn-secondary w-full flex items-center justify-center gap-2"
                 @click="router.push(`/gv/de-tai/${chiTiet.id}/hop-dong`)"
-                style="justify-content:center"
               >
-                📄 Xem hợp đồng
+                <FileText :size="16" /> Xem hợp đồng
               </button>
             </div>
           </div>
@@ -288,8 +288,8 @@ function getStepState(stepKey, currentStatus) {
     </template>
 
     <!-- Not found -->
-    <div v-else class="alert alert-danger">
-      ❌ Không tìm thấy đề tài hoặc bạn không có quyền truy cập.
+    <div v-else class="alert alert-danger flex items-center gap-2">
+      <XCircle :size="16" /> Không tìm thấy đề tài hoặc bạn không có quyền truy cập.
     </div>
   </div>
 </template>

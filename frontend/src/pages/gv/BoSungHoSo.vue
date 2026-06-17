@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDetaiStore } from '@/stores/detai.store'
 import api from '@/api/axios'
+import { ClipboardList, AlertTriangle, Clock, FolderOpen, FileText, Send, ArrowLeft, X } from '@lucide/vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -73,7 +74,9 @@ async function submit() {
 
 <template>
   <div>
-    <button class="btn btn-ghost btn-sm mb-4" @click="router.back()">← Quay lại</button>
+    <button class="btn btn-ghost btn-sm mb-4 flex items-center gap-2" @click="router.back()">
+      <ArrowLeft size="16" /> Quay lại
+    </button>
 
     <!-- Loading -->
     <div v-if="loading" style="display:flex;flex-direction:column;gap:12px">
@@ -92,10 +95,12 @@ async function submit() {
       <!-- Yêu cầu từ P.NCKH -->
       <div v-if="yeuCau" class="yeu-cau-box mb-4" :class="{ overdue: isOverDue }">
         <div class="yeu-cau-header">
-          <span class="yeu-cau-icon">📋</span>
+          <span class="yeu-cau-icon"><ClipboardList :size="18" /></span>
           <span class="yeu-cau-title">Yêu cầu từ P.NCKH</span>
-          <span v-if="deadline" class="yeu-cau-deadline" :class="{ overdue: isOverDue }">
-            {{ isOverDue ? '⚠️ Quá hạn:' : '⏳ Hạn nộp:' }} {{ deadline }}
+          <span v-if="deadline" class="yeu-cau-deadline flex items-center gap-1" :class="{ overdue: isOverDue }">
+            <AlertTriangle v-if="isOverDue" :size="14" />
+            <Clock v-else :size="14" />
+            {{ isOverDue ? 'Quá hạn:' : 'Hạn nộp:' }} {{ deadline }}
           </span>
         </div>
         <p class="yeu-cau-content">{{ yeuCau.noiDung }}</p>
@@ -112,15 +117,15 @@ async function submit() {
             <label class="file-upload-area" :class="{ 'has-files': uploadFiles.length }">
               <input type="file" multiple accept=".pdf,.doc,.docx,.png,.jpg" @change="onFileChange" class="file-input" />
               <div v-if="!uploadFiles.length" class="file-placeholder">
-                <span class="file-icon">📂</span>
+                <span class="file-icon"><FolderOpen :size="32" /></span>
                 <span>Kéo thả hoặc <u>chọn file</u></span>
               </div>
               <div v-else class="file-list">
                 <div v-for="(f, i) in uploadFiles" :key="i" class="file-item">
-                  <span class="file-item-icon">📄</span>
+                  <span class="file-item-icon"><FileText :size="16" /></span>
                   <span class="file-item-name">{{ f.name }}</span>
                   <span class="file-item-size text-muted text-sm">{{ (f.size / 1048576).toFixed(1) }} MB</span>
-                  <button type="button" class="file-item-remove" @click.stop="removeFile(i)">✕</button>
+                  <button type="button" class="file-item-remove" @click.stop="removeFile(i)"><X size="14" /></button>
                 </div>
                 <label class="btn btn-ghost btn-sm" style="cursor:pointer">
                   <input type="file" multiple accept=".pdf,.doc,.docx" @change="onFileChange" style="display:none" />
@@ -162,11 +167,12 @@ async function submit() {
             <button type="button" class="btn btn-secondary" @click="router.back()">Hủy</button>
             <button
               type="submit"
-              class="btn btn-primary"
+              class="btn btn-primary flex items-center gap-2"
               :disabled="submitting || !form.moTaBoSung.trim()"
             >
               <span v-if="submitting" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
-              📤 {{ submitting ? 'Đang gửi...' : 'Gửi bổ sung' }}
+              <Send v-else :size="16" />
+              <span>{{ submitting ? 'Đang gửi...' : 'Gửi bổ sung' }}</span>
             </button>
           </div>
         </form>

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useNckhStore } from '@/stores/nckh.store'
 import { useToast } from 'primevue/usetoast'
+import { PenTool, ArrowLeft } from '@lucide/vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -34,7 +35,9 @@ function fmtM(n) { return n?.toLocaleString('vi-VN') + ' đ' }
 
 <template>
   <div class="page-container">
-    <button class="btn btn-ghost btn-sm mb-4" @click="router.back()">← Quay lại</button>
+    <button class="btn btn-ghost btn-sm mb-4 flex items-center gap-2" @click="router.back()">
+      <ArrowLeft size="16" /> Quay lại
+    </button>
 
     <div class="page-header">
       <h1 class="page-title">Soạn hợp đồng</h1>
@@ -73,8 +76,9 @@ function fmtM(n) { return n?.toLocaleString('vi-VN') + ' đ' }
           </div>
           <div class="form-actions">
             <button type="button" class="btn btn-secondary" @click="router.back()">Hủy</button>
-            <button type="submit" class="btn btn-primary" :disabled="submitting">
-              {{ submitting ? 'Đang ký...' : '✍️ Ký và lưu hợp đồng' }}
+            <button type="submit" class="btn btn-primary flex items-center gap-2" :disabled="submitting">
+              <span v-if="submitting">Đang ký...</span>
+              <span v-else class="flex items-center gap-2"><PenTool size="16" /> Ký và lưu hợp đồng</span>
             </button>
           </div>
         </form>

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useDetaiStore } from '@/stores/detai.store'
 import { useAuthStore } from '@/stores/auth.store'
 import StatusBadge from '@/components/StatusBadge.vue'
+import { List, Clock, Settings, Search, Sparkles, Plus, TriangleAlert, FileEdit, Paperclip } from '@lucide/vue'
 
 const store  = useDetaiStore()
 const auth   = useAuthStore()
@@ -22,10 +23,10 @@ const recent      = computed(() => [...list.value]
 )
 
 const stats = computed(() => [
-  { icon: 'pi pi-list', label: 'Tổng đề tài',      value: list.value.length, iconClass: 'stat-icon-teal',  delta: '+2 kỳ này' },
-  { icon: 'pi pi-clock', label: 'Chờ phê duyệt',    value: pending.value,     iconClass: 'stat-icon-amber'  },
-  { icon: 'pi pi-cog', label: 'Đang thực hiện',   value: active.value,      iconClass: 'stat-icon-blue'   },
-  { icon: 'pi pi-search', label: 'Đang phản biện',   value: inReview.value,    iconClass: 'stat-icon-green'  },
+  { icon: List, label: 'Tổng đề tài',      value: list.value.length, iconClass: 'stat-icon-teal',  delta: '+2 kỳ này' },
+  { icon: Clock, label: 'Chờ phê duyệt',    value: pending.value,     iconClass: 'stat-icon-amber'  },
+  { icon: Settings, label: 'Đang thực hiện',   value: active.value,      iconClass: 'stat-icon-blue'   },
+  { icon: Search, label: 'Đang phản biện',   value: inReview.value,    iconClass: 'stat-icon-green'  },
 ])
 
 const processSteps = [
@@ -54,17 +55,17 @@ const greeting = computed(() => {
     <!-- Greeting -->
     <div class="greeting-row">
       <div>
-        <h1 class="greeting-title">{{ greeting }}, {{ auth.user?.hoTen?.split(' ').pop() }} <i class="pi pi-sparkles" style="color: var(--color-amber); font-size: 0.8em"></i></h1>
+        <h1 class="greeting-title">{{ greeting }}, {{ auth.user?.hoTen?.split(' ').pop() }} <Sparkles style="color: var(--color-amber);" :size="24" /></h1>
         <p class="greeting-sub">Đây là tổng quan hoạt động nghiên cứu của bạn.</p>
       </div>
       <button class="btn btn-primary" @click="router.push('/gv/de-tai/tao-moi')">
-        <i class="pi pi-plus" style="margin-right: 4px;"></i> Đăng ký đề tài
+        <Plus :size="16" style="margin-right: 4px;" /> Đăng ký đề tài
       </button>
     </div>
 
     <!-- Warning banner -->
     <div v-if="needsAction.length > 0" class="warning-banner">
-      <i class="pi pi-exclamation-triangle" style="font-size: 1.2rem; margin-right: 8px;"></i>
+      <TriangleAlert :size="20" style="margin-right: 8px;" />
       <div>
         <strong>Cần bổ sung hồ sơ:</strong> Bạn có {{ needsAction.length }} đề tài đang chờ bổ sung từ P.NCKH.
         <button class="btn-link" @click="router.push('/gv/de-tai')">Xem ngay →</button>
@@ -74,7 +75,7 @@ const greeting = computed(() => {
     <!-- Stats -->
     <div class="stats-grid">
       <div v-for="s in stats" :key="s.label" class="stat-card">
-        <div class="stat-icon" :class="s.iconClass"><i :class="s.icon"></i></div>
+        <div class="stat-icon" :class="s.iconClass"><component :is="s.icon" :size="24" /></div>
         <div>
           <div class="stat-value">{{ s.value }}</div>
           <div class="stat-label">{{ s.label }}</div>
@@ -97,7 +98,7 @@ const greeting = computed(() => {
         </div>
 
         <div v-else-if="recent.length === 0" class="card-body empty-dash">
-          <i class="pi pi-file-edit" style="font-size: 2rem; color: var(--color-text-muted)"></i>
+          <FileEdit :size="32" style="color: var(--color-text-muted)" />
           <p>Chưa có đề tài nào.
             <button class="btn-link" @click="router.push('/gv/de-tai/tao-moi')">Tạo ngay</button>
           </p>
@@ -131,14 +132,14 @@ const greeting = computed(() => {
           </div>
           <div class="quick-actions">
             <button class="quick-action-btn" @click="router.push('/gv/de-tai/tao-moi')">
-              <span class="qa-icon"><i class="pi pi-plus"></i></span>
+              <span class="qa-icon"><Plus :size="18" /></span>
               <div>
                 <div class="qa-title">Đăng ký đề tài</div>
                 <div class="qa-sub">Nộp đề tài nghiên cứu mới</div>
               </div>
             </button>
             <button class="quick-action-btn" @click="router.push('/gv/de-tai')">
-              <span class="qa-icon"><i class="pi pi-list"></i></span>
+              <span class="qa-icon"><List :size="18" /></span>
               <div>
                 <div class="qa-title">Xem danh sách</div>
                 <div class="qa-sub">Quản lý tất cả đề tài</div>
@@ -149,7 +150,7 @@ const greeting = computed(() => {
               class="quick-action-btn warn-action"
               @click="router.push('/gv/de-tai')"
             >
-              <span class="qa-icon"><i class="pi pi-paperclip"></i></span>
+              <span class="qa-icon"><Paperclip :size="18" /></span>
               <div>
                 <div class="qa-title warn-text">Bổ sung hồ sơ</div>
                 <div class="qa-sub">{{ needsAction.length }} đề tài cần bổ sung</div>

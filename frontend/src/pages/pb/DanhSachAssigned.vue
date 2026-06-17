@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { usePBStore } from '@/stores/pb.store'
 import StatusBadge from '@/components/StatusBadge.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { Search } from '@lucide/vue'
 
 const store  = usePBStore()
 const router = useRouter()
@@ -26,7 +27,7 @@ function fmt(iso) { return new Date(iso).toLocaleDateString('vi-VN') }
     <div v-if="loading" class="skeleton" style="height:150px"></div>
 
     <div v-else-if="!danhSachAssigned.length">
-      <EmptyState icon="pi pi-search" title="Chưa có đề tài nào" message="Bạn chưa được phân công phản biện đề tài nào." />
+      <EmptyState :icon="Search" title="Chưa có đề tài nào" message="Bạn chưa được phân công phản biện đề tài nào." />
     </div>
 
     <div v-else class="assigned-list">

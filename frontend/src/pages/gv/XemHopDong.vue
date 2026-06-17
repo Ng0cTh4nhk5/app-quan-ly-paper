@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDetaiStore } from '@/stores/detai.store'
+import { ArrowLeft, CheckCircle2, Printer, PenTool, Hourglass, Check } from '@lucide/vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -35,12 +36,17 @@ function fmtM(n)  { return n ? n.toLocaleString('vi-VN') + ' đ' : '—' }
 
 <template>
   <div>
-    <button class="btn btn-ghost btn-sm mb-4" @click="router.back()">← Quay lại</button>
+    <button class="btn btn-ghost btn-sm mb-4 flex items-center gap-2" @click="router.back()">
+      <ArrowLeft size="16" /> Quay lại
+    </button>
 
     <!-- Success notice after signing -->
-    <div v-if="signed" class="alert-success mb-4">
-      ✅ Bạn đã ký xác nhận hợp đồng thành công. Đề tài chuyển sang trạng thái <strong>Đang thực hiện</strong>.
-      <button class="btn btn-ghost btn-sm ml-4" @click="router.push('/gv/dashboard')">Về trang chủ</button>
+    <div v-if="signed" class="alert-success mb-4 flex items-start gap-2">
+      <CheckCircle2 size="20" class="shrink-0 mt-0.5" />
+      <div>
+        Bạn đã ký xác nhận hợp đồng thành công. Đề tài chuyển sang trạng thái <strong>Đang thực hiện</strong>.
+        <button class="btn btn-ghost btn-sm ml-4" @click="router.push('/gv/dashboard')">Về trang chủ</button>
+      </div>
     </div>
 
     <div v-if="loading" style="display:flex;flex-direction:column;gap:12px">
@@ -56,18 +62,21 @@ function fmtM(n)  { return n ? n.toLocaleString('vi-VN') + ' đ' : '—' }
           <p class="page-subtitle mono">{{ chiTiet.maSo }}</p>
         </div>
         <div style="display:flex;gap:var(--space-2)">
-          <button class="btn btn-secondary" onclick="window.print()">🖨️ In hợp đồng</button>
+          <button class="btn btn-secondary flex items-center gap-2" onclick="window.print()">
+            <Printer size="16" /> In hợp đồng
+          </button>
           <button
             v-if="canKy"
-            class="btn btn-primary"
+            class="btn btn-primary flex items-center gap-2"
             :disabled="signing"
             @click="kyHopDong"
           >
             <span v-if="signing" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
-            ✍️ {{ signing ? 'Đang ký...' : 'Ký xác nhận' }}
+            <PenTool v-else size="16" />
+            {{ signing ? 'Đang ký...' : 'Ký xác nhận' }}
           </button>
-          <span v-else-if="chiTiet.trangThai === 'DANG_THUC_HIEN'" class="badge badge-success">
-            ✅ Đã ký
+          <span v-else-if="chiTiet.trangThai === 'DANG_THUC_HIEN'" class="badge badge-success flex items-center gap-1">
+            <CheckCircle2 size="14" /> Đã ký
           </span>
         </div>
       </div>
@@ -88,11 +97,15 @@ function fmtM(n)  { return n ? n.toLocaleString('vi-VN') + ' đ' : '—' }
 
         <!-- Status banner -->
         <div
-          class="status-banner"
+          class="status-banner flex items-center justify-center gap-2"
           :class="chiTiet.trangThai === 'DANG_THUC_HIEN' ? 'signed' : 'pending'"
         >
-          <span v-if="chiTiet.trangThai === 'DANG_THUC_HIEN'">✅ Hợp đồng đã có hiệu lực — Cả hai bên đã ký</span>
-          <span v-else>⏳ Đang chờ xác nhận ký kết của Chủ nhiệm đề tài</span>
+          <template v-if="chiTiet.trangThai === 'DANG_THUC_HIEN'">
+            <CheckCircle2 size="18" /> Hợp đồng đã có hiệu lực — Cả hai bên đã ký
+          </template>
+          <template v-else>
+            <Hourglass size="18" /> Đang chờ xác nhận ký kết của Chủ nhiệm đề tài
+          </template>
         </div>
 
         <!-- Main content -->
@@ -151,7 +164,7 @@ function fmtM(n)  { return n ? n.toLocaleString('vi-VN') + ' đ' : '—' }
             <div class="sig-block">
               <div class="sig-label">Chủ nhiệm đề tài</div>
               <div class="sig-area" :class="{ done: chiTiet.trangThai === 'DANG_THUC_HIEN' }">
-                <span v-if="chiTiet.trangThai === 'DANG_THUC_HIEN'" class="sig-check">✍️</span>
+                <Check v-if="chiTiet.trangThai === 'DANG_THUC_HIEN'" size="32" class="text-accent" />
               </div>
               <div class="sig-name">{{ chiTiet.giangVien?.hoTen ?? chiTiet.chuNhiem }}</div>
               <div class="sig-date">{{ chiTiet.trangThai === 'DANG_THUC_HIEN' ? fmt(chiTiet.updatedAt) : '' }}</div>
@@ -159,7 +172,7 @@ function fmtM(n)  { return n ? n.toLocaleString('vi-VN') + ' đ' : '—' }
             <div class="sig-block">
               <div class="sig-label">Trưởng P.NCKH</div>
               <div class="sig-area done">
-                <span class="sig-check">✍️</span>
+                <Check size="32" class="text-accent" />
               </div>
               <div class="sig-name">P.NCKH</div>
               <div class="sig-date">{{ fmt(chiTiet.updatedAt) }}</div>

@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import api from '@/api/axios'
+import { LayoutDashboard, Inbox, Settings, LogOut } from '@lucide/vue'
 
 const auth   = useAuthStore()
 const router = useRouter()
@@ -49,16 +50,16 @@ function logout() { auth.logout(); router.push('/login') }
       <nav class="sidebar-nav">
         <span class="sidebar-section-label">Tổng quan</span>
         <RouterLink to="/nckh/dashboard">
-          <i class="pi pi-th-large nav-icon"></i> Dashboard
+          <LayoutDashboard class="nav-icon" :size="18" /> Dashboard
         </RouterLink>
 
         <span class="sidebar-section-label">Xử lý hồ sơ</span>
         <RouterLink to="/nckh/inbox">
-          <i class="pi pi-inbox nav-icon"></i> Hộp thư đến
+          <Inbox class="nav-icon" :size="18" /> Hộp thư đến
           <span v-if="inboxCount > 0" class="inbox-badge">{{ inboxCount }}</span>
         </RouterLink>
         <RouterLink to="/nckh/dang-xu-ly">
-          <i class="pi pi-cog nav-icon"></i> Đang xử lý
+          <Settings class="nav-icon" :size="18" /> Đang xử lý
         </RouterLink>
       </nav>
 
@@ -71,7 +72,7 @@ function logout() { auth.logout(); router.push('/login') }
           </div>
         </div>
         <button class="btn btn-ghost btn-sm sidebar-logout" @click="logout">
-          <i class="pi pi-sign-out"></i> Đăng xuất
+          <LogOut :size="16" /> Đăng xuất
         </button>
       </div>
     </aside>

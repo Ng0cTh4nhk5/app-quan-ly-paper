@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { Search, LogOut } from '@lucide/vue'
 
 const auth   = useAuthStore()
 const router = useRouter()
@@ -38,7 +39,7 @@ function logout() { auth.logout(); router.push('/login') }
       <nav class="sidebar-nav">
         <span class="sidebar-section-label">Phản biện</span>
         <RouterLink to="/pb/de-tai">
-          <i class="pi pi-search nav-icon"></i> Đề tài phân công
+          <Search class="nav-icon" :size="18" /> Đề tài phân công
         </RouterLink>
       </nav>
 
@@ -51,7 +52,7 @@ function logout() { auth.logout(); router.push('/login') }
           </div>
         </div>
         <button class="btn btn-ghost btn-sm sidebar-logout" @click="logout">
-          <i class="pi pi-sign-out"></i> Đăng xuất
+          <LogOut :size="16" /> Đăng xuất
         </button>
       </div>
     </aside>

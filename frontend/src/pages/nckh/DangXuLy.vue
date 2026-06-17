@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { useNckhStore } from '@/stores/nckh.store'
 import StatusBadge from '@/components/StatusBadge.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { Settings } from '@lucide/vue'
 
 const store  = useNckhStore()
 const router = useRouter()
@@ -33,7 +34,7 @@ function fmt(iso) { return new Date(iso).toLocaleDateString('vi-VN') }
     <div v-if="loading" class="skeleton" style="height:200px"></div>
 
     <div v-else-if="!filtered.length">
-      <EmptyState icon="⚙️" title="Không có hồ sơ đang xử lý" />
+      <EmptyState :icon="Settings" title="Không có hồ sơ đang xử lý" />
     </div>
 
     <div v-else class="table-wrapper">

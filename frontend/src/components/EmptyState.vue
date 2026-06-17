@@ -1,6 +1,6 @@
 <script setup>
 defineProps({
-  icon:    { type: String, default: 'pi pi-inbox' },
+  icon:    { type: [String, Object], default: null },
   title:   { type: String, default: 'Không có dữ liệu' },
   message: { type: String, default: '' },
   action:  { type: String, default: '' },
@@ -10,8 +10,9 @@ const emit = defineEmits(['action'])
 
 <template>
   <div class="empty-state">
-    <i v-if="icon.startsWith('pi')" :class="icon" class="empty-icon-pi"></i>
-    <div v-else class="empty-icon">{{ icon }}</div>
+    <component v-if="typeof icon === 'object'" :is="icon" class="empty-icon-lucide" size="48" stroke-width="1.5" />
+    <i v-else-if="icon && icon.startsWith('pi')" :class="icon" class="empty-icon-pi"></i>
+    <div v-else-if="icon" class="empty-icon">{{ icon }}</div>
     <h3 class="empty-title">{{ title }}</h3>
     <p v-if="message" class="empty-msg">{{ message }}</p>
     <button v-if="action" class="btn btn-primary mt-4" @click="emit('action')">{{ action }}</button>
@@ -24,6 +25,7 @@ const emit = defineEmits(['action'])
   padding: 64px 24px; text-align: center;
 }
 .empty-icon  { font-size: 40px; margin-bottom: 16px; }
+.empty-icon-lucide { color: var(--color-text-muted); margin-bottom: 16px; display: block; }
 .empty-icon-pi { font-size: 3rem; color: var(--color-text-muted); margin-bottom: 16px; display: block; }
 .empty-title { font: var(--text-h3); color: var(--color-text-primary); margin-bottom: 8px; }
 .empty-msg   { font: var(--text-body); color: var(--color-text-muted); max-width: 360px; }

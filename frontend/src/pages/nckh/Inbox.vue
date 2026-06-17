@@ -5,15 +5,16 @@ import { storeToRefs } from 'pinia'
 import { useNckhStore } from '@/stores/nckh.store'
 import StatusBadge from '@/components/StatusBadge.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { Inbox, Search, Paperclip, ChevronRight } from '@lucide/vue'
 
 const store  = useNckhStore()
 const router = useRouter()
 const { inbox, loading } = storeToRefs(store)
 
 const TABS = [
-  { key: 'CHO_PNCKH_XEM_XET',     label: 'Chờ tiếp nhận',     icon: '📬' },
-  { key: 'DANG_XEM_XET_BOI_PNCKH', label: 'Đang xem xét',      icon: '🔍' },
-  { key: 'CHO_BO_SUNG_HO_SO',      label: 'Chờ bổ sung',        icon: '📎' },
+  { key: 'CHO_PNCKH_XEM_XET',     label: 'Chờ tiếp nhận',     icon: Inbox },
+  { key: 'DANG_XEM_XET_BOI_PNCKH', label: 'Đang xem xét',      icon: Search },
+  { key: 'CHO_BO_SUNG_HO_SO',      label: 'Chờ bổ sung',        icon: Paperclip },
 ]
 const activeTab = ref('CHO_PNCKH_XEM_XET')
 
@@ -58,7 +59,10 @@ function fmtM(n)  { return n ? n.toLocaleString('vi-VN') + ' đ' : '—' }
         :class="{ active: activeTab === tab.key }"
         @click="activeTab = tab.key"
       >
-        <span>{{ tab.icon }} {{ tab.label }}</span>
+        <div class="flex items-center gap-2">
+          <component :is="tab.icon" :size="16" />
+          <span>{{ tab.label }}</span>
+        </div>
         <span v-if="countByTab[tab.key]" class="tab-count">{{ countByTab[tab.key] }}</span>
       </button>
     </div>
@@ -71,7 +75,7 @@ function fmtM(n)  { return n ? n.toLocaleString('vi-VN') + ' đ' : '—' }
     <!-- Empty -->
     <div v-else-if="!filteredInbox.length">
       <EmptyState
-        icon="pi pi-inbox"
+        :icon="Inbox"
         title="Không có hồ sơ nào"
         :message="`Không có hồ sơ nào ở trạng thái '${TABS.find(t => t.key === activeTab)?.label}'.`"
       />
@@ -97,7 +101,8 @@ function fmtM(n)  { return n ? n.toLocaleString('vi-VN') + ' đ' : '—' }
             </div>
             <!-- Yêu cầu bổ sung hint -->
             <div v-if="dt.yeuCauBoSung" class="yeu-cau-hint">
-              📎 {{ typeof dt.yeuCauBoSung === 'string' ? dt.yeuCauBoSung : dt.yeuCauBoSung?.noiDung }}
+              <Paperclip :size="14" class="inline-block align-text-bottom mr-1" />
+              <span>{{ typeof dt.yeuCauBoSung === 'string' ? dt.yeuCauBoSung : dt.yeuCauBoSung?.noiDung }}</span>
             </div>
           </div>
         </div>
@@ -105,7 +110,7 @@ function fmtM(n)  { return n ? n.toLocaleString('vi-VN') + ' đ' : '—' }
           <div class="inbox-amount" v-if="dt.kinhPhi">{{ fmtM(dt.kinhPhi) }}</div>
           <StatusBadge :status="dt.trangThai" />
           <div class="inbox-date">{{ fmt(dt.updatedAt) }}</div>
-          <i class="pi pi-chevron-right text-muted"></i>
+          <ChevronRight :size="16" class="text-muted" />
         </div>
       </div>
     </div>
