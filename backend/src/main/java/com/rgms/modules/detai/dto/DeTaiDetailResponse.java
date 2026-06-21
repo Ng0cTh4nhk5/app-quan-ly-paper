@@ -23,6 +23,8 @@ public class DeTaiDetailResponse {
     private LocalDateTime updatedAt;
     private String moTa;
     private String linhVuc;
+    private String donVi;
+    private String kyNckh;
     private List<TaiLieuResponse> taiLieu;
     private List<AuditLogEntry> auditLog;
 }

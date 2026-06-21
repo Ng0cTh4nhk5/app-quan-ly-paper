@@ -56,6 +56,10 @@ public class DeTai {
     @JoinColumn(name = "ky_nckh_id", nullable = false)
     private KyNCKH kyNckh;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "don_vi_id", nullable = false)
+    private DonVi donVi;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

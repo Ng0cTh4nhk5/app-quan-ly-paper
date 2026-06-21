@@ -12,7 +12,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/rgms}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:thinh2005}
+    password: ${DB_PASSWORD:CHANGE_ME}
   jpa:
     hibernate:
       ddl-auto: validate

@@ -74,6 +74,7 @@ public class ResearchTopicService {
                 .trangThai(TRANG_THAI_DRAFT)
                 .chuNhiem(chuNhiem)
                 .kyNckh(kyNCKH)
+                .donVi(chuNhiem.getDonVi())
                 .build();
         DeTai saved = deTaiRepository.save(deTai);
 
@@ -83,6 +84,8 @@ public class ResearchTopicService {
                 .actorId(gvId)
                 .tuTrangThai(null)
                 .sangTrangThai(TRANG_THAI_DRAFT)
+                .severity("INFO")
+                .ghiChu("Khởi tạo đề tài nháp")
                 .build());
 
         return deTaiMapper.toResponse(saved);
@@ -138,7 +141,7 @@ public class ResearchTopicService {
     private String generateMaSo() {
         int year = Year.now().getValue();
         String prefix = "NCKH-" + year + "-";
-        long nextNumber = deTaiRepository.countByMaSoStartingWith(prefix) + 1;
+        long nextNumber = deTaiRepository.nextMaSoSequence();
         return prefix + String.format("%04d", nextNumber);
     }
 

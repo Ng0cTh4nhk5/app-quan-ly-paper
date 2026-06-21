@@ -17,5 +17,7 @@ public class AuditLogEntry {
     private String actor;
     private String tuTrangThai;
     private String sangTrangThai;
+    private String severity;
+    private String ghiChu;
     private LocalDateTime createdAt;
 }

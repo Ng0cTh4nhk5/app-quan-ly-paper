@@ -37,6 +37,8 @@ public class DeTaiMapper {
                 .updatedAt(deTai.getUpdatedAt())
                 .moTa(deTai.getMoTa())
                 .linhVuc(deTai.getLinhVuc())
+                .donVi(deTai.getDonVi() != null ? deTai.getDonVi().getTenDonVi() : null)
+                .kyNckh(deTai.getKyNckh() != null ? deTai.getKyNckh().getTenKy() : null)
                 .taiLieu(taiLieu)
                 .auditLog(auditLog)
                 .build();
@@ -48,6 +50,8 @@ public class DeTaiMapper {
                 .actor(actorNames.getOrDefault(auditLog.getActorId(), null))
                 .tuTrangThai(auditLog.getTuTrangThai())
                 .sangTrangThai(auditLog.getSangTrangThai())
+                .severity(auditLog.getSeverity())
+                .ghiChu(auditLog.getGhiChu())
                 .createdAt(auditLog.getCreatedAt())
                 .build();
     }

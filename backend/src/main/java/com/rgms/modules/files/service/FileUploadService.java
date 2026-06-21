@@ -2,6 +2,7 @@ package com.rgms.modules.files.service;
 
 import com.rgms.exception.BusinessException;
 import com.rgms.exception.ResourceNotFoundException;
+import com.rgms.modules.detai.entity.DeTai;
 import com.rgms.modules.detai.repo.DeTaiRepository;
 import com.rgms.modules.files.entity.TaiLieu;
 import com.rgms.modules.files.repo.TaiLieuRepository;
@@ -44,6 +45,7 @@ public class FileUploadService {
             "KET_QUA_PB",
             "HOP_DONG"
     );
+    private static final String TRANG_THAI_DRAFT = "DRAFT";
 
     private final TaiLieuRepository taiLieuRepository;
     private final DeTaiRepository deTaiRepository;
@@ -54,9 +56,9 @@ public class FileUploadService {
     @Transactional
     public TaiLieu save(MultipartFile file, Long deTaiId, String loai, Long uploaderId) {
         validateUpload(file, loai);
-        if (!deTaiRepository.existsById(deTaiId)) {
-            throw new ResourceNotFoundException("Đề tài", "id", deTaiId);
-        }
+        DeTai deTai = deTaiRepository.findById(deTaiId)
+                .orElseThrow(() -> new ResourceNotFoundException("Đề tài", "id", deTaiId));
+        validateUploadPermission(deTai, uploaderId);
 
         String originalFilename = sanitizeFilename(file.getOriginalFilename());
         String storedFilename = UUID.randomUUID() + "_" + originalFilename;
@@ -129,6 +131,17 @@ public class FileUploadService {
         }
         if (!ALLOWED_LOAI.contains(loai)) {
             throw new BusinessException("Loại tài liệu không hợp lệ.", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private void validateUploadPermission(DeTai deTai, Long uploaderId) {
+        if (deTai.getChuNhiem() == null || !deTai.getChuNhiem().getId().equals(uploaderId)) {
+            throw new BusinessException("Bạn không có quyền upload file cho đề tài này.", HttpStatus.FORBIDDEN);
+        }
+        if (!TRANG_THAI_DRAFT.equals(deTai.getTrangThai())) {
+            throw new BusinessException(
+                    "Không thể upload file ở trạng thái " + deTai.getTrangThai() + ".",
+                    HttpStatus.CONFLICT);
         }
     }
 

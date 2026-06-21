@@ -20,15 +20,23 @@ public class JwtUtil {
     private long jwtExpirationMs;
 
     public String generateToken(Long userId, String username, String role) {
+        return generateToken(userId, username, role, null);
+    }
+
+    public String generateToken(Long userId, String username, String role, Long donViId) {
         Date now = new Date();
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("username", username)
                 .claim("role", role)
                 .issuedAt(now)
-                .expiration(new Date(now.getTime() + jwtExpirationMs))
-                .signWith(getSigningKey(), Jwts.SIG.HS256)
-                .compact();
+                .expiration(new Date(now.getTime() + jwtExpirationMs));
+
+        if (donViId != null) {
+            builder.claim("donViId", donViId);
+        }
+
+        return builder.signWith(getSigningKey(), Jwts.SIG.HS256).compact();
     }
 
     public boolean validateToken(String token) {

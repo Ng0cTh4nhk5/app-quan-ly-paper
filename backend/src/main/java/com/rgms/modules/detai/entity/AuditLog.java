@@ -43,6 +43,13 @@ public class AuditLog {
     @Column(name = "sang_trang_thai")
     private String sangTrangThai;
 
+    @Builder.Default
+    @Column(nullable = false, length = 20)
+    private String severity = "INFO";
+
+    @Column(name = "ghi_chu", columnDefinition = "TEXT")
+    private String ghiChu;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

@@ -1,5 +1,8 @@
 package com.rgms.modules.auth;
 
+import com.rgms.exception.BusinessException;
+import com.rgms.modules.detai.entity.NguoiDung;
+import com.rgms.modules.detai.repo.NguoiDungRepository;
 import com.rgms.shared.security.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -8,7 +11,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,36 +28,30 @@ import java.util.Map;
 public class AuthController {
 
     private final JwtUtil jwtUtil;
+    private final NguoiDungRepository nguoiDungRepository;
 
     @PostMapping("/login")
     @Operation(
             summary = "Đăng nhập mock để lấy JWT",
-            description = "Sinh JWT token phục vụ kiểm thử Phase 1. Endpoint nhận username và role tuỳ chọn, sau đó tự map 4 user seed gồm gv_a, nckh_b, pb_c, pb_d theo đúng đặc tả dự án."
+            description = "Sinh JWT token phục vụ kiểm thử Phase 1. Endpoint nhận username của user seed trong database và trả token chứa userId, username, role."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Sinh token thành công"),
+            @ApiResponse(responseCode = "401", description = "Username không tồn tại trong dữ liệu seed"),
             @ApiResponse(responseCode = "500", description = "Lỗi hệ thống khi sinh token")
     })
     public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest request) {
-        String username = request.getUsername();
-        String role = request.getRole();
-        Long userId = 999L;
-
-        if ("gv_a".equalsIgnoreCase(username)) {
-            userId = 1L;
-            role = "GIANG_VIEN";
-        } else if ("nckh_b".equalsIgnoreCase(username)) {
-            userId = 2L;
-            role = "NCKH";
-        } else if ("pb_c".equalsIgnoreCase(username)) {
-            userId = 3L;
-            role = "TO_PHAN_BIEN";
-        } else if ("pb_d".equalsIgnoreCase(username)) {
-            userId = 4L;
-            role = "TO_PHAN_BIEN";
+        if (request == null || !StringUtils.hasText(request.getUsername())) {
+            throw new BusinessException("Username không được để trống.", HttpStatus.BAD_REQUEST);
         }
 
-        String token = jwtUtil.generateToken(userId, username, role);
+        NguoiDung user = nguoiDungRepository.findByUsername(request.getUsername().trim())
+                .orElseThrow(() -> new BusinessException(
+                        "User không tồn tại trong dữ liệu seed.",
+                        HttpStatus.UNAUTHORIZED));
+
+        Long donViId = user.getDonVi() != null ? user.getDonVi().getId() : null;
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getVaiTro(), donViId);
         return ResponseEntity.ok(Map.of("token", token));
     }
 
