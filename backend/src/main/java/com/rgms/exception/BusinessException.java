@@ -1,25 +1,27 @@
 package com.rgms.exception;
 
-/**
- * Thrown when a business rule is violated (e.g., invalid FSM transition,
- * advance rate exceeded, missing required file before submission).
- * Maps to HTTP 422 Unprocessable Entity.
- */
+import lombok.Getter;
+import org.springframework.http.HttpStatus;
+
+@Getter
 public class BusinessException extends RuntimeException {
 
-    private final String errorCode;
+    private final HttpStatus status;
 
     public BusinessException(String message) {
-        super(message);
-        this.errorCode = "BUSINESS_RULE_VIOLATION";
+        this(message, HttpStatus.BAD_REQUEST);
     }
 
-    public BusinessException(String errorCode, String message) {
+    public BusinessException(String message, HttpStatus status) {
         super(message);
-        this.errorCode = errorCode;
+        this.status = status;
     }
 
-    public String getErrorCode() {
-        return errorCode;
+    public static BusinessException conflict(String message) {
+        return new BusinessException(message, HttpStatus.CONFLICT);
+    }
+
+    public static BusinessException forbidden(String message) {
+        return new BusinessException(message, HttpStatus.FORBIDDEN);
     }
 }
