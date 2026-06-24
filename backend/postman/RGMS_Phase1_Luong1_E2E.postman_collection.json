@@ -1,0 +1,621 @@
+{
+  "info": {
+    "_postman_id": "d4d5f5f5-ae13-4d6e-9bf9-e8d1f12fb56a",
+    "name": "RGMS_Phase1_Luong1_E2E",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function fmt(days) {",
+          "  const d = new Date();",
+          "  d.setDate(d.getDate() + days);",
+          "  return d.toISOString().slice(0, 10);",
+          "}",
+          "pm.environment.set('deadlineBoSung', fmt(14));",
+          "pm.environment.set('deadlinePb', fmt(30));",
+          "pm.environment.set('ngayKy', fmt(1));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Auth - GV",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"gv_a\",\n  \"role\": \"GIANG_VIEN\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('GV login returns 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('gvToken', pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Auth - NCKH",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"nckh_b\",\n  \"role\": \"NCKH\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('NCKH login returns 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('nckhToken', pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Auth - PB1",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"pb_c\",\n  \"role\": \"TO_PHAN_BIEN\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PB1 login returns 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('pbToken1', pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Auth - PB2",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"pb_d\",\n  \"role\": \"TO_PHAN_BIEN\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PB2 login returns 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('pbToken2', pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Create Draft Topic",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{gvToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tenDeTai\": \"Đề tài E2E Postman\",\n  \"moTa\": \"Kịch bản kiểm thử tích hợp Luồng 1\",\n  \"linhVuc\": \"Công nghệ thông tin\",\n  \"kyNckhId\": 1\n}"
+        },
+        "url": "{{baseUrl}}/de-tai"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Create returns 201', () => pm.response.to.have.status(201));",
+              "const data = pm.response.json();",
+              "pm.environment.set('deTaiId', data.id);",
+              "pm.test('Topic is DRAFT', () => pm.expect(data.trangThai).to.eql('DRAFT'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Add Suggested Reviewer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{gvToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"hoTen\": \"PGS.TS Chuyên Gia A\",\n  \"email\": \"chuyen.gia.a@example.com\",\n  \"coQuan\": \"Trường Đại học Mẫu\"\n}"
+        },
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/phan-bien-de-xuat"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Suggested reviewer returns 201', () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Upload Thuyet Minh",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{gvToken}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "F:/PHAT TRIEN HE THONG WEB/Tổng hợp dự án/app-quan-ly-paper-docs - Code/backend/postman/sample-thuyet-minh.pdf"
+            },
+            {
+              "key": "deTaiId",
+              "value": "{{deTaiId}}",
+              "type": "text"
+            },
+            {
+              "key": "loai",
+              "value": "THUYET_MINH",
+              "type": "text"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/files/upload"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Upload returns 201', () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Send Application",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{gvToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/gui-ho-so"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Send returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('State is CHO_PNCKH_XEM_XET', () => pm.expect(pm.response.json().trangThai).to.eql('CHO_PNCKH_XEM_XET'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Receive Application",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{nckhToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/tiep-nhan"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Receive returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('State is DANG_XEM_XET_BOI_PNCKH', () => pm.expect(pm.response.json().trangThai).to.eql('DANG_XEM_XET_BOI_PNCKH'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Request Supplement",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{nckhToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"noiDung\": \"Vui lòng bổ sung minh chứng phương pháp nghiên cứu.\",\n  \"deadlinePhanHoi\": \"{{deadlineBoSung}}\"\n}"
+        },
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/yeu-cau-bo-sung"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Supplement request returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('State is CHO_BO_SUNG_HO_SO', () => pm.expect(pm.response.json().trangThai).to.eql('CHO_BO_SUNG_HO_SO'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Submit Supplement",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{gvToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/nop-bo-sung"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Submit supplement returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('State returns to DANG_XEM_XET_BOI_PNCKH', () => pm.expect(pm.response.json().trangThai).to.eql('DANG_XEM_XET_BOI_PNCKH'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Create Review Committee",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{nckhToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"thanhVienIds\": [3, 4],\n  \"deadlineNop\": \"{{deadlinePb}}\"\n}"
+        },
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/lap-to-phan-bien"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Create committee returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('State is DANG_PHAN_BIEN', () => pm.expect(pm.response.json().trangThai).to.eql('DANG_PHAN_BIEN'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 PB1 Submit Result",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pbToken1}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ketQua\": \"CHAP_NHAN\",\n  \"nhanXet\": \"Đề tài có tính khả thi và nên phê duyệt.\"\n}"
+        },
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/nop-ket-qua-pb"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PB1 submit returns 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 PB2 Submit Result",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pbToken2}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ketQua\": \"CHAP_NHAN\",\n  \"nhanXet\": \"Nội dung đáp ứng yêu cầu phản biện.\"\n}"
+        },
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/nop-ket-qua-pb"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PB2 submit returns 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Approve Review Result",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{nckhToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"quyetDinh\": \"CHAP_NHAN\",\n  \"ghiChu\": \"Thống nhất phê duyệt theo kết quả phản biện.\"\n}"
+        },
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/xet-duyet-pb"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Approve review returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('State is DANG_LAP_HOP_DONG', () => pm.expect(pm.response.json().trangThai).to.eql('DANG_LAP_HOP_DONG'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 Draft Contract",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{nckhToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"kinhPhi\": 100000000,\n  \"ngayBatDau\": \"2026-08-01\",\n  \"ngayKetThuc\": \"2027-08-01\",\n  \"tyLeTamUng\": 0.3\n}"
+        },
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/soan-hop-dong"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Draft contract returns 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 GV Accept Contract",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{gvToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dongY\": true\n}"
+        },
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/phan-hoi-hop-dong"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Accept contract returns 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Sign Contract",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{nckhToken}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "fileScan",
+              "type": "file",
+              "src": "F:/PHAT TRIEN HE THONG WEB/Tổng hợp dự án/app-quan-ly-paper-docs - Code/backend/postman/sample-hop-dong.pdf"
+            },
+            {
+              "key": "ngayKy",
+              "value": "{{ngayKy}}",
+              "type": "text"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}/ky-hop-dong"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Sign contract returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('Final state is DANG_THUC_HIEN', () => pm.expect(pm.response.json().trangThai).to.eql('DANG_THUC_HIEN'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Final Detail",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{nckhToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/de-tai/{{deTaiId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Detail returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('Audit log exists', () => pm.expect(pm.response.json().auditLog.length).to.be.greaterThan(0));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

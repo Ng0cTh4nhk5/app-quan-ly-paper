@@ -13,5 +13,8 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Long> {
     @EntityGraph(attributePaths = "donVi")
     Optional<NguoiDung> findByUsername(String username);
 
+    @EntityGraph(attributePaths = "donVi")
+    List<NguoiDung> findByVaiTro(String vaiTro);
+
     List<NguoiDung> findByIdIn(Collection<Long> ids);
 }

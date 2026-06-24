@@ -45,7 +45,12 @@ public class FileUploadService {
             "KET_QUA_PB",
             "HOP_DONG"
     );
-    private static final String TRANG_THAI_DRAFT = "DRAFT";
+    private static final Set<String> ALLOWED_UPLOAD_STATES = Set.of(
+            "DRAFT",
+            "CHO_BO_SUNG_HO_SO",
+            "CHO_CHINH_SUA_THUYET_MINH"
+    );
+    private static final String PDF_TYPE = "application/pdf";
 
     private final TaiLieuRepository taiLieuRepository;
     private final DeTaiRepository deTaiRepository;
@@ -119,6 +124,28 @@ public class FileUploadService {
         }
     }
 
+    public String saveContractScan(MultipartFile file, Long deTaiId) {
+        validateContractScan(file);
+
+        String originalFilename = sanitizeFilename(file.getOriginalFilename());
+        String storedFilename = UUID.randomUUID() + "_" + originalFilename;
+        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path folderPath = uploadPath.resolve("hop-dong").resolve(String.valueOf(deTaiId)).normalize();
+        Path targetPath = folderPath.resolve(storedFilename).normalize();
+
+        if (!targetPath.startsWith(folderPath)) {
+            throw new BusinessException("Đường dẫn file không hợp lệ.", HttpStatus.BAD_REQUEST);
+        }
+
+        try {
+            Files.createDirectories(folderPath);
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            return targetPath.toString();
+        } catch (IOException e) {
+            throw new BusinessException("Lỗi khi lưu file scan hợp đồng.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private void validateUpload(MultipartFile file, String loai) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException("Vui lòng chọn file tải lên.", HttpStatus.BAD_REQUEST);
@@ -134,11 +161,23 @@ public class FileUploadService {
         }
     }
 
+    private void validateContractScan(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException("Vui lòng chọn file scan hợp đồng.", HttpStatus.BAD_REQUEST);
+        }
+        if (file.getSize() > MAX_SIZE) {
+            throw new BusinessException("File scan hợp đồng vượt quá giới hạn 20MB.", HttpStatus.BAD_REQUEST);
+        }
+        if (!PDF_TYPE.equals(file.getContentType())) {
+            throw new BusinessException("File scan hợp đồng phải là PDF.", HttpStatus.BAD_REQUEST);
+        }
+    }
+
     private void validateUploadPermission(DeTai deTai, Long uploaderId) {
         if (deTai.getChuNhiem() == null || !deTai.getChuNhiem().getId().equals(uploaderId)) {
             throw new BusinessException("Bạn không có quyền upload file cho đề tài này.", HttpStatus.FORBIDDEN);
         }
-        if (!TRANG_THAI_DRAFT.equals(deTai.getTrangThai())) {
+        if (!ALLOWED_UPLOAD_STATES.contains(deTai.getTrangThai())) {
             throw new BusinessException(
                     "Không thể upload file ở trạng thái " + deTai.getTrangThai() + ".",
                     HttpStatus.CONFLICT);
