@@ -1,20 +1,23 @@
 package com.rgms.modules.detai.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Request DTO cho lập tổ phản biện (F-PNCKH-03).
  */
-@Getter
-@Setter
+@Data
 public class LapToPhanBienRequest {
 
-    private LocalDate deadlineNop;
+    @NotEmpty(message = "Danh sách thành viên phản biện không được rỗng")
+    private List<Long> thanhVienIds;
 
-    private List<UUID> danhSachPhanBienId;
+    @NotNull(message = "Deadline nộp phản biện là bắt buộc")
+    @FutureOrPresent(message = "Deadline nộp phản biện không được nằm trong quá khứ")
+    private LocalDate deadlineNop;
 }

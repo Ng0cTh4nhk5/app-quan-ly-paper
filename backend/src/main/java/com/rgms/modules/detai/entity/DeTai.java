@@ -3,13 +3,13 @@ package com.rgms.modules.detai.entity;
 import com.rgms.modules.nguoidung.entity.DonVi;
 import com.rgms.modules.nguoidung.entity.NguoiDung;
 import com.rgms.shared.enums.TopicState;
-import com.rgms.shared.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Entity DeTai — Đề tài NCKH (trung tâm của toàn bộ hệ thống).
@@ -24,7 +24,12 @@ import java.time.LocalDate;
 @Table(name = "de_tai")
 @Getter
 @Setter
-public class DeTai extends BaseEntity {
+public class DeTai {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", updatable = false, nullable = false)
+    private Long id;
 
     // ── Thông tin cơ bản ──────────────────────────────────────────────────────
 
@@ -47,7 +52,7 @@ public class DeTai extends BaseEntity {
      * ONLY FsmService được phép gọi setStatus() — mọi code khác phải check và throw.
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 50)
+    @Column(name = "trang_thai", nullable = false, length = 50)
     private TopicState status = TopicState.DRAFT;
 
     // ── Thời gian thực hiện ───────────────────────────────────────────────────
@@ -77,21 +82,21 @@ public class DeTai extends BaseEntity {
     private NguoiDung chuNhiem;
 
     /**
-     * Đơn vị của chủ nhiệm — lấy từ user.donVi khi tạo đề tài (gd-1-1-khoi-tao.md dòng 61).
+     * Đơn vị của chủ nhiệm — lấy từ user.donVi khi tạo đề tài.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "don_vi_id", nullable = false)
+    @JoinColumn(name = "don_vi_id")
     private DonVi donVi;
 
     /**
-     * Kỳ NCKH đăng ký — phải đang DANG_MO khi tạo (Guard F-GV-01 GUARD-3).
+     * Kỳ NCKH đăng ký — phải đang DANG_MO khi tạo.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ky_nckh_id", nullable = false)
     private KyNckh kyNckh;
 
     /**
-     * Nguồn khi vào Cho_Hoan_Tra_Tam_Ung (er-diagram.md dòng 30).
+     * Nguồn khi vào Cho_Hoan_Tra_Tam_Ung.
      * HUY | RUT | KHONG_NGHIEM_THU | DU_TAM_UNG — NULL nếu không ở state đó.
      */
     @Column(name = "nguon_cho_hoan_tra", length = 30)
@@ -106,4 +111,23 @@ public class DeTai extends BaseEntity {
      */
     @Column(name = "gv_da_dong_y_hop_dong")
     private Boolean gvDaDongYHopDong = false;
+
+    // ── Timestamps ────────────────────────────────────────────────────────────
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

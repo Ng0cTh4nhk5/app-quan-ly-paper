@@ -1,7 +1,6 @@
 package com.rgms.modules.detai.entity;
 
 import com.rgms.modules.nguoidung.entity.NguoiDung;
-import com.rgms.shared.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,7 +11,7 @@ import java.time.LocalDateTime;
  *
  * Quy tắc BR-15:
  *   - KHÔNG được UPDATE hay DELETE bất kỳ bản ghi nào.
- *   - Ghi mọi transition trạng thái và hành động quan trọng.
+ *   - Ghi mỗi transition trạng thái và hành động quan trọng.
  *   - Retention tối thiểu 2 năm.
  *
  * Tham chiếu: er-diagram.md — Entity 18. AuditLog
@@ -27,10 +26,9 @@ import java.time.LocalDateTime;
 public class AuditLog {
 
     @Id
-    @GeneratedValue(generator = "uuid7")
-    @org.hibernate.annotations.GenericGenerator(name = "uuid7", type = com.rgms.shared.util.Uuid7Generator.class)
-    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID")
-    private java.util.UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", updatable = false, nullable = false)
+    private Long id;
 
     /**
      * NULL cho thao tác cấp hệ thống (config, admin system action).
@@ -58,7 +56,7 @@ public class AuditLog {
     /**
      * Metadata bổ sung (số tiền, lý do, v.v.) — JSON string.
      */
-    @Column(name = "meta", columnDefinition = "JSONB")
+    @Column(name = "meta", columnDefinition = "TEXT")
     private String meta;
 
     @Column(name = "thoi_gian", nullable = false)

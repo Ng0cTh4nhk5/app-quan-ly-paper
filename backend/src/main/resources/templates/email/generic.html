@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${title}">RGMS Notification</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.5;">
+<p>Xin chào <strong th:text="${recipientName}">Anh/Chị</strong>,</p>
+<p th:text="${message}">Hệ thống RGMS có thông báo mới.</p>
+<p>
+    <strong>Mã đề tài:</strong> <span th:text="${maSo}">N/A</span><br>
+    <strong>Tên đề tài:</strong> <span th:text="${tenDeTai}">N/A</span>
+</p>
+<p>Trân trọng,<br>RGMS</p>
+</body>
+</html>
