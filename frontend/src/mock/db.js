@@ -202,12 +202,35 @@ export const MOCK_DE_TAI = [
     ],
     toPhanBien: null,
   },
+  {
+    id: 8,
+    maSo: 'NCKH-2025-0099',
+    tenDeTai: 'Xay dung bo cong cu truc quan hoa du lieu nghien cuu khoa hoc',
+    trangThai: 'HOAN_TAT',
+    chuNhiemId: 1,
+    chuNhiem: 'TS. Nguyen Van Anh',
+    linhVuc: 'He thong thong tin',
+    kyNckhId: 1,
+    kyNckh: 'Ky NCKH 2026-I',
+    moTa: 'De tai da hoan tat de kiem thu nhan trang thai va giao dien danh sach.',
+    kinhPhi: 55000000,
+    updatedAt: days(12),
+    createdAt: days(140),
+    taiLieu: [
+      { id: 108, loai: 'BAO_CAO_TONG_KET', tenFile: 'bao-cao-tong-ket-0099.pdf', downloadUrl: '#', size: '2.9 MB', uploadedAt: days(15) }
+    ],
+    auditLog: [
+      makeLog('TS. Nguyen Van Anh', 'Tao de tai', days(140)),
+      makeLog('CN. Le Van Cuong', 'Nghiem thu va hoan tat de tai', days(12)),
+    ],
+    toPhanBien: null,
+  },
 ]
 
 // ── MOCK STATE (mutated by actions) ────────────────
 let _deTaiList = JSON.parse(JSON.stringify(MOCK_DE_TAI))
-let _nextId = 8
-let _nextMaSo = 8
+let _nextId = 9
+let _nextMaSo = 9
 
 export function getDB() { return _deTaiList }
 
@@ -239,6 +262,7 @@ export function createDeTai(payload, user) {
     kyNckh: KY_NCKH_LIST.find(k => k.id === payload.kyNckhId)?.ten ?? '',
     moTa: payload.moTa ?? '',
     kinhPhi: 0,
+    thoiGianThucHien: 12,
     updatedAt: new Date().toISOString(),
     createdAt: new Date().toISOString(),
     taiLieu: [],
@@ -259,15 +283,36 @@ export function updateTrangThai(id, trangThai, actorName, action, extra = {}) {
   return JSON.parse(JSON.stringify(dt))
 }
 
-export function addTaiLieu(detaiId, file) {
+export function addTaiLieu(detaiId, file, actorName = 'He thong') {
   const dt = getDeTaiById(detaiId)
   if (!dt) return
+  dt.taiLieu = dt.taiLieu ?? []
+  const size = typeof file.size === 'number'
+    ? `${(file.size / 1048576).toFixed(1)} MB`
+    : (file.size ?? '1.2 MB')
   dt.taiLieu.push({
     id: Date.now(),
-    loai: 'THUYET_MINH',
-    tenFile: file.name,
-    downloadUrl: '#',
-    size: `${(file.size / 1048576).toFixed(1)} MB`,
+    loai: file.loai ?? 'THUYET_MINH',
+    tenFile: file.name ?? file.fileName ?? `file-${Date.now()}.pdf`,
+    downloadUrl: file.downloadUrl ?? '#',
+    size,
     uploadedAt: new Date().toISOString(),
   })
+  dt.updatedAt = new Date().toISOString()
+  dt.auditLog.push(makeLog(actorName, `Upload tai lieu: ${file.name ?? file.fileName ?? 'file'}`, new Date().toISOString()))
+  return JSON.parse(JSON.stringify(dt))
+}
+
+export function removeTaiLieu(detaiId, taiLieuId, actorName = 'He thong') {
+  const dt = getDeTaiById(detaiId)
+  if (!dt) throw new Error('Khong tim thay de tai.')
+  if (dt.trangThai !== 'DRAFT') throw new Error('Chi duoc xoa tai lieu khi de tai dang o trang thai nhap.')
+
+  const taiLieuIndex = (dt.taiLieu ?? []).findIndex(t => t.id === parseInt(taiLieuId))
+  if (taiLieuIndex === -1) throw new Error('Khong tim thay tai lieu.')
+
+  const [removedFile] = dt.taiLieu.splice(taiLieuIndex, 1)
+  dt.updatedAt = new Date().toISOString()
+  dt.auditLog.push(makeLog(actorName, `Xoa tai lieu: ${removedFile.tenFile}`, new Date().toISOString()))
+  return JSON.parse(JSON.stringify(dt))
 }

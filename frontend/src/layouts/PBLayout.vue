@@ -1,12 +1,23 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
-import { Search, LogOut } from '@lucide/vue'
+import { Search, LogOut, Menu, X } from '@lucide/vue'
 
 const auth   = useAuthStore()
 const router = useRouter()
 const route  = useRoute()
+
+// ── Mobile Menu State ────────────────────────────────
+const isMobileMenuOpen = ref(false)
+
+watch(() => route.path, () => {
+  isMobileMenuOpen.value = false
+})
+
+watch(isMobileMenuOpen, (val) => {
+  document.body.style.overflow = val ? 'hidden' : ''
+})
 
 const initials = computed(() => {
   const name = auth.user?.hoTen ?? ''
@@ -26,8 +37,17 @@ function logout() { auth.logout(); router.push('/login') }
 
 <template>
   <div class="layout-wrapper">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <!-- ── Overlay mờ (mobile/tablet) ─────────────── -->
+    <Transition name="overlay">
+      <div
+        v-if="isMobileMenuOpen"
+        class="sidebar-overlay"
+        @click="isMobileMenuOpen = false"
+      />
+    </Transition>
+
+    <!-- ── SIDEBAR ────────────────────────────────── -->
+    <aside class="sidebar" :class="{ 'is-open': isMobileMenuOpen }">
       <div class="sidebar-logo">
         <div class="logo-mark">P</div>
         <div class="logo-text">
@@ -57,9 +77,20 @@ function logout() { auth.logout(); router.push('/login') }
       </div>
     </aside>
 
-    <!-- MAIN -->
+    <!-- ── MAIN ───────────────────────────────────── -->
     <main class="main-content">
       <header class="topbar">
+        <!-- Nút Hamburger -->
+        <button
+          class="btn-menu-toggle"
+          :aria-label="isMobileMenuOpen ? 'Đóng menu' : 'Mở menu'"
+          :aria-expanded="isMobileMenuOpen"
+          @click="isMobileMenuOpen = !isMobileMenuOpen"
+        >
+          <X v-if="isMobileMenuOpen" :size="20" />
+          <Menu v-else :size="20" />
+        </button>
+
         <div class="topbar-breadcrumb">
           <span>Tổ Phản Biện</span>
           <span class="sep">/</span>
@@ -85,6 +116,7 @@ function logout() { auth.logout(); router.push('/login') }
   padding: var(--space-5) var(--space-6);
   border-bottom: 1px solid rgba(255,255,255,0.06);
   flex-shrink: 0;
+  min-height: var(--topbar-height);
 }
 .logo-mark {
   width: 32px; height: 32px;
@@ -98,6 +130,7 @@ function logout() { auth.logout(); router.push('/login') }
 .logo-text { display: flex; flex-direction: column; }
 .logo-name { font: 700 14px/1 var(--font-sans); color: #fff; }
 .logo-desc { font: var(--text-caption); color: #64748B; margin-top: 2px; }
+
 .sidebar-user-info { flex: 1; overflow: hidden; }
 .sidebar-logout {
   width: 100%;
@@ -107,5 +140,18 @@ function logout() { auth.logout(); router.push('/login') }
   font-size: 12px;
 }
 .sidebar-logout:hover { color: #CBD5E1 !important; }
-.page-content { flex: 1; padding: var(--space-8) var(--space-8); overflow-y: auto; }
+
+.page-content { flex: 1; padding: var(--space-8) var(--space-10); overflow-y: auto; }
+
+.overlay-enter-active,
+.overlay-leave-active { transition: opacity 0.2s ease; }
+.overlay-enter-from,
+.overlay-leave-to     { opacity: 0; }
+
+@media (max-width: 1024px) {
+  .page-content { padding: var(--space-6) var(--space-6); }
+}
+@media (max-width: 640px) {
+  .page-content { padding: var(--space-4) var(--space-4); }
+}
 </style>

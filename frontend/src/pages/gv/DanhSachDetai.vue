@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDetaiStore } from '@/stores/detai.store'
@@ -21,7 +21,7 @@ const STATUS_OPTS = [
   { value: 'CHO_BO_SUNG_HO_SO',  label: 'Chờ bổ sung' },
   { value: 'DANG_PHAN_BIEN',      label: 'Đang phản biện' },
   { value: 'DANG_THUC_HIEN',      label: 'Đang thực hiện' },
-  { value: 'DA_HOAN_THANH',       label: 'Hoàn thành' },
+  { value: 'HOAN_TAT',            label: 'Hoàn thành' },
 ]
 
 const filtered = computed(() =>
@@ -39,7 +39,7 @@ function getProgress(status) {
     DANG_PHAN_BIEN: 50,
     DANG_THUC_HIEN: 70,
     CHO_NGHIEM_THU: 85,
-    DA_HOAN_THANH: 100,
+    HOAN_TAT: 100,
   }
   return map[status] ?? 10
 }
@@ -50,7 +50,19 @@ function getProgressClass(status) {
   return ''
 }
 
-onMounted(() => store.layDanhSach())
+function syncMobileView() {
+  if (window.innerWidth < 768) viewMode.value = 'card'
+}
+
+onMounted(() => {
+  syncMobileView()
+  window.addEventListener('resize', syncMobileView)
+  store.layDanhSach()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', syncMobileView)
+})
 
 function fmt(iso) {
   if (!iso) return '—'
@@ -231,5 +243,21 @@ function fmtMoney(n) {
   display: flex; justify-content: space-between;
   font: var(--text-caption); color: var(--color-text-muted);
   margin-bottom: var(--space-1);
+}
+
+/* ── RESPONSIVE ──────────────────────── */
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+  .toolbar-left {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+  .filter-select { width: 100%; }
+  .view-toggle { align-self: flex-end; }
 }
 </style>

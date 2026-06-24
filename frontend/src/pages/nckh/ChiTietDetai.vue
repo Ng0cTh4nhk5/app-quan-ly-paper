@@ -29,7 +29,11 @@ const canTiepNhan    = computed(() => chiTiet.value?.trangThai === 'CHO_PNCKH_XE
 const canYeuCauBoSung= computed(() => chiTiet.value?.trangThai === 'DANG_XEM_XET_BOI_PNCKH')
 const canLapPB       = computed(() => chiTiet.value?.trangThai === 'DANG_XEM_XET_BOI_PNCKH')
 const canXetDuyetPB  = computed(() => chiTiet.value?.trangThai === 'DANG_PHAN_BIEN')
-const canKyHopDong   = computed(() => chiTiet.value?.trangThai === 'DANG_LAP_HOP_DONG')
+const canKyHopDong = computed(() =>
+  chiTiet.value?.trangThai === 'DANG_LAP_HOP_DONG' &&
+  chiTiet.value?.gvDaDongYHopDong &&
+  !chiTiet.value?.hopDongFeedback
+)
 
 const pbMembers = Object.values(MOCK_USERS).filter(u => u.role === 'TO_PHAN_BIEN')
 

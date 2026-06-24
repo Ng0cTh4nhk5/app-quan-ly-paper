@@ -104,9 +104,19 @@
   --shadow-md:  0 4px 10px oklch(0.15 0.02 250 / 0.08);
   --shadow-lg:  0 8px 24px oklch(0.15 0.02 250 / 0.10);
 
-  /* ── LAYOUT ───────────────────────────────────── */
+  /* ── LAYOUT ───────────────────────────────────────── */
   --sidebar-width: 240px;
   --topbar-height: 56px;
+
+  /* ── RESPONSIVE BREAKPOINTS (reference only — use in @media) ── */
+  /* xs/mobile: < 640px  | sm/tablet: 640–1024px | lg/desktop: 1024–1440px | xl: > 1440px */
+
+  /* ── CONTENT MAX-WIDTH (Hybrid Responsive Philosophy) ─────── */
+  /* Tiêu chuẩn: nội dung chính không vượt quá 1440px, căn giữa  */
+  /* Form / Chi tiết đơn trang: giới hạn 760px để tối ưu đọc     */
+  --content-max-width:   1440px;  /* Dashboard, Danh sách, bảng dữ liệu  */
+  --content-form-width:   760px;  /* Form đơn, Chi tiết đề tài 1 cột     */
+  --content-contract-width: 860px; /* Văn bản hợp đồng                  */
 
   /* ── TRANSITIONS ──────────────────────────────── */
   --transition-fast: 120ms ease;
