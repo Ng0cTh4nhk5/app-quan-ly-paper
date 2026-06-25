@@ -209,8 +209,16 @@ const greeting = computed(() => {
 .recent-item:last-child { border-bottom: none; }
 .recent-item:hover { background: var(--color-surface-alt); }
 .recent-main { flex: 1; min-width: 0; }
-.recent-title { font: var(--text-h4); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.recent-meta  { display: flex; align-items: center; gap: var(--space-2); margin-top: 2px; }
+.recent-title { 
+  font: var(--text-h4); 
+  color: var(--color-text-primary); 
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+}
+.recent-meta  { display: flex; align-items: center; gap: var(--space-2); margin-top: 4px; }
 
 .quick-actions { padding: var(--space-2) 0; }
 .quick-action-btn {
@@ -232,4 +240,24 @@ const greeting = computed(() => {
 .btn-link { background: none; border: none; cursor: pointer; color: var(--color-accent); font: inherit; font-weight: 600; padding: 0; }
 .btn-link:hover { color: var(--color-accent-hover); }
 .side-col { display: flex; flex-direction: column; }
+
+/* ── RESPONSIVE ──────────────────────── */
+@media (max-width: 768px) {
+  .greeting-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .greeting-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* Tối ưu danh sách đề tài trên mobile: xếp dọc thay vì ngang */
+  .recent-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+}
 </style>

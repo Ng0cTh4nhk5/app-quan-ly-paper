@@ -22,10 +22,14 @@ export const useDetaiStore = defineStore('detai', () => {
   }
 
   async function layChiTiet(id) {
-    loading.value = true
+    loading.value = true; error.value = null
     try {
       const res = await api.get(`/de-tai/${id}`)
       chiTiet.value = res.data
+    } catch (e) {
+      chiTiet.value = null
+      error.value = e.response?.data?.message ?? 'Khong the tai chi tiet de tai.'
+      throw e
     } finally { loading.value = false }
   }
 
@@ -50,14 +54,29 @@ export const useDetaiStore = defineStore('detai', () => {
     return res.data
   }
 
-  async function kyHopDong(detaiId) {
-    const res = await api.post(`/de-tai/${detaiId}/ky-hop-dong`)
+  async function dongYHopDong(detaiId, payload = {}) {
+    const res = await api.post(`/de-tai/${detaiId}/gv-dong-y-hop-dong`, payload)
+    _sync(detaiId, res.data)
+    return res.data
+  }
+
+  async function yeuCauChinhSuaHopDong(detaiId, payload) {
+    const res = await api.post(`/de-tai/${detaiId}/hop-dong/yeu-cau-chinh-sua`, payload)
     _sync(detaiId, res.data)
     return res.data
   }
 
   async function uploadFile(detaiId, file, loai = 'THUYET_MINH') {
-    const res = await api.post(`/de-tai/${detaiId}/upload`, { file, loai })
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('loai', loai)
+    const res = await api.post(`/de-tai/${detaiId}/tai-lieu`, formData)
+    _sync(detaiId, res.data)
+    return res.data
+  }
+
+  async function xoaTaiLieu(detaiId, taiLieuId) {
+    const res = await api.delete(`/de-tai/${detaiId}/tai-lieu/${taiLieuId}`)
     _sync(detaiId, res.data)
     return res.data
   }
@@ -72,6 +91,6 @@ export const useDetaiStore = defineStore('detai', () => {
     danhSach, chiTiet, loading, error,
     deTaiDraft, deTaiChoBoSung,
     layDanhSach, layChiTiet, taoDeTai,
-    guiHoSo, boSungHoSo, kyHopDong, uploadFile,
+    guiHoSo, boSungHoSo, dongYHopDong, yeuCauChinhSuaHopDong, uploadFile, xoaTaiLieu,
   }
 })

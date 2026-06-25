@@ -10,7 +10,7 @@ const store     = useDetaiStore()
 const toast     = useToast()
 const submitting = ref(false)
 
-const form = reactive({ tenDeTai: '', linhVuc: '', kyNckhId: null, moTa: '' })
+const form = reactive({ tenDeTai: '', linhVuc: '', kyNckhId: '', moTa: '' })
 const errors = reactive({ tenDeTai: '', kyNckhId: '' })
 
 const LINH_VUC = [
@@ -29,7 +29,10 @@ async function submit() {
   if (!validate()) return
   submitting.value = true
   try {
-    const dt = await store.taoDeTai({ ...form })
+    const dt = await store.taoDeTai({
+      ...form,
+      kyNckhId: Number(form.kyNckhId),
+    })
     toast.add({ severity: 'success', summary: 'Tạo thành công',
       detail: `Mã đề tài: ${dt.maSo}`, life: 4000 })
     router.push(`/gv/de-tai/${dt.id}`)
@@ -83,7 +86,7 @@ async function submit() {
               v-model="form.kyNckhId"
               class="form-select" :class="{ 'is-error': errors.kyNckhId }"
             >
-              <option :value="null">— Chọn kỳ —</option>
+              <option value="">— Chọn kỳ —</option>
               <option v-for="k in KY_NCKH_LIST" :key="k.id" :value="k.id">{{ k.ten }}</option>
             </select>
             <span v-if="errors.kyNckhId" class="form-error">{{ errors.kyNckhId }}</span>

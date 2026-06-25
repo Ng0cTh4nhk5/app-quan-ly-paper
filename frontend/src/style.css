@@ -35,13 +35,16 @@ a:hover { color: var(--color-accent-hover); }
 /* ── SIDEBAR ───────────────────────────────────── */
 .sidebar {
   width: var(--sidebar-width);
-  min-height: 100svh;
+  height: 100svh;
   background: var(--color-primary);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 30;
 }
 
 .sidebar-logo {
@@ -64,6 +67,8 @@ a:hover { color: var(--color-accent-hover); }
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .sidebar-nav a {
@@ -103,6 +108,7 @@ a:hover { color: var(--color-accent-hover); }
 .sidebar-footer {
   padding: var(--space-4) var(--space-6);
   border-top: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
 }
 
 .sidebar-user {
@@ -139,9 +145,13 @@ a:hover { color: var(--color-accent-hover); }
 .main-content {
   flex: 1;
   min-width: 0;
+  width: calc(100% - var(--sidebar-width));
+  margin-left: var(--sidebar-width);
   display: flex;
   flex-direction: column;
   background: var(--color-bg);
+  /* Ultra-wide: giới hạn không cho layout bị giãn vô hạn khi > 1440px */
+  overflow-x: hidden;
 }
 
 /* ── PAGE LAYOUT ───────────────────────────────── */
@@ -491,11 +501,24 @@ a:hover { color: var(--color-accent-hover); }
 /* ── PAGE CONTENT (with topbar) ─────────────────── */
 .page-content {
   flex: 1;
+  /* Padding theo tiêu chuẩn: Desktop dùng space-8/space-10 */
   padding: var(--space-8) var(--space-10);
   overflow-y: auto;
+  overflow-x: hidden;
+  /* Ultra-wide (>1440px): giới hạn và căn giữa nội dung */
+  max-width: var(--content-max-width);
+  width: 100%;
+  /* KHÔNG dùng margin: auto ở đây để sidebar vẫn trải full height */
 }
-@media (max-width: 768px) {
-  .page-content { padding: var(--space-6) var(--space-5); }
+
+/* Tablet (640px – 1024px): padding thu hẹp vừa */
+@media (max-width: 1024px) {
+  .page-content { padding: var(--space-6) var(--space-6); }
+}
+
+/* Mobile (<640px): padding nhỏ gọn */
+@media (max-width: 640px) {
+  .page-content { padding: var(--space-4) var(--space-4); }
 }
 
 /* ── STATS CARDS ────────────────────────────────── */
@@ -601,8 +624,12 @@ a:hover { color: var(--color-accent-hover); }
 }
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  /* Giảm min-width từ 320px xuống 280px để tránh tràn màn hình ở iPhone SE */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-4);
+}
+@media (max-width: 640px) {
+  .projects-grid { grid-template-columns: 1fr; }
 }
 
 /* ── ACTIVITY TIMELINE ──────────────────────────── */
@@ -829,9 +856,200 @@ input[type="number"].form-input { -moz-appearance: textfield; }
 input[type="number"].form-input::-webkit-inner-spin-button,
 input[type="number"].form-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 
-/* ── RESPONSIVE SIDEBAR TOGGLE ──────────────────── */
-@media (max-width: 768px) {
-  .layout-wrapper { flex-direction: column; }
-  .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; }
-  .sidebar-footer { display: none; }
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE SYSTEM — RGMS (Chuẩn Quốc Tế)
+   Triết lý Hybrid: Fluid shell + Centered content
+   Breakpoints: Mobile <640px | Tablet 640–1024px | Desktop 1024–1440px | Ultra-wide >1440px
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Nút Hamburger Toggle (ẩn mặc định trên Desktop) ─── */
+.btn-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  /* Touch target tối thiểu 44x44px theo chuẩn Apple/Google */
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  margin-left: calc(-1 * var(--space-2));
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.btn-menu-toggle:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text-primary);
+}
+
+/* ── Overlay mờ phía sau khi sidebar mở (mobile/tablet) ─ */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 25;
+  animation: overlayIn 0.2s ease;
+}
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── TABLET & MOBILE (<= 1024px): Sidebar chuyển sang Drawer ─ */
+@media (max-width: 1024px) {
+  /* Hiện nút hamburger */
+  .btn-menu-toggle {
+    display: flex;
+  }
+
+  /* Sidebar chuyển về Drawer: ẩn ngoài màn hình */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100svh;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 30;
+    /* Đảm bảo sidebar không bị flex-row */
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    flex-shrink: 0;
+  }
+
+  /* Khi sidebar được toggle mở */
+  .sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+  }
+
+  /* Main content chiếm toàn bộ chiều ngang */
+  .main-content {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  /* Phục hồi sidebar-nav overflow */
+  .sidebar-nav {
+    overflow-y: auto;
+  }
+
+  /* Hiện lại sidebar-footer trên mobile */
+  .sidebar-footer {
+    display: block;
+  }
+}
+
+/* ── MOBILE (<= 640px): Tinh chỉnh giao diện nhỏ ─── */
+@media (max-width: 640px) {
+  /* Tiêu đề trang nhỏ lại */
+  .page-title {
+    font-size: 20px !important;
+  }
+
+  /* Page header xếp dọc trên mobile */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .page-header .btn,
+  .page-header .btn-primary,
+  .page-header .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Form hành động xếp dọc, nút full-width */
+  .form-actions {
+    flex-direction: column-reverse !important;
+    gap: var(--space-2) !important;
+  }
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+    /* Touch target tối thiểu 44px theo chuẩn quốc tế */
+    min-height: 44px;
+  }
+
+  /* Form 2 cột → 1 cột trên mobile */
+  .form-2col {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Stats grid: 2 cột trên mobile thay vì auto-fit quá nhỏ */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Card projects: 1 cột */
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Dialog full-screen trên mobile */
+  .dialog {
+    max-width: 100% !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+  }
+  .dialog-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  /* Toast width fit-content trên mobile */
+  .toast {
+    min-width: unset;
+    max-width: calc(100vw - var(--space-8));
+  }
+  .toast-container {
+    bottom: var(--space-4);
+    right: var(--space-4);
+    left: var(--space-4);
+  }
+
+  /* Stepper cuộn ngang trên mobile thay vì bị bóp nhỏ */
+  .status-stepper {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .stepper-step {
+    min-width: 72px;
+    scroll-snap-align: start;
+  }
+
+  /* Bảng dữ liệu: đảm bảo cuộn ngang không tràn trang */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .data-table {
+    min-width: 600px;
+  }
+
+  /* Detail layout xếp chồng 1 cột */
+  .detail-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── ULTRA-WIDE (> 1440px): Giới hạn & căn giữa ─── */
+@media (min-width: 1441px) {
+  /* Vỏ layout vẫn full-width */
+  .layout-wrapper {
+    width: 100%;
+  }
+
+  /* Giới hạn nội dung trong vùng đọc thoải mái */
+  .page-content {
+    /* Dùng padding để tạo giới hạn thay vì max-width + margin */
+    padding-left: max(var(--space-10), calc((100% - var(--content-max-width)) / 2 + var(--space-10)));
+    padding-right: max(var(--space-10), calc((100% - var(--content-max-width)) / 2 + var(--space-10)));
+  }
 }

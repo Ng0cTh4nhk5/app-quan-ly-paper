@@ -3,33 +3,88 @@ import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDetaiStore } from '@/stores/detai.store'
+import { validateThuyetMinhFile } from '@/utils/uploadValidation'
 import StatusBadge from '@/components/StatusBadge.vue'
-import { CheckCircle, XCircle, Edit3, Send, Search, FileSignature, FlaskConical, Paperclip, FileText, AlertTriangle, PartyPopper } from '@lucide/vue'
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Edit3,
+  FileSignature,
+  FileText,
+  FlaskConical,
+  Paperclip,
+  PartyPopper,
+  Search,
+  Send,
+  Trash2,
+  XCircle,
+} from '@lucide/vue'
 
-const route  = useRoute()
+const route = useRoute()
 const router = useRouter()
-const store  = useDetaiStore()
-const { chiTiet, loading } = storeToRefs(store)
+const store = useDetaiStore()
+const { chiTiet, loading, error } = storeToRefs(store)
 
-// Toast state
-const toast = ref(null) // { type, msg }
+const toast = ref(null)
+const isLoading = ref(false)
+const uploading = ref(false)
+
+onMounted(() => store.layChiTiet(route.params.id).catch(() => {}))
+
+const canGuiHoSo = computed(() =>
+  ['DRAFT', 'CHO_CHINH_SUA_THUYET_MINH'].includes(chiTiet.value?.trangThai)
+)
+const canXoaTaiLieuPreview = computed(() => chiTiet.value?.trangThai === 'DRAFT')
+const canBoSung = computed(() => chiTiet.value?.trangThai === 'CHO_BO_SUNG_HO_SO')
+const canXemHopDong = computed(() =>
+  ['DANG_LAP_HOP_DONG', 'DANG_THUC_HIEN', 'HOAN_TAT'].includes(chiTiet.value?.trangThai)
+)
+const taiLieu = computed(() => chiTiet.value?.taiLieu ?? [])
+const auditItems = computed(() => chiTiet.value?.auditLog ?? chiTiet.value?.lichSu ?? [])
+const hasThuyetMinh = computed(() => taiLieu.value.some(t => t.loai === 'THUYET_MINH'))
+
+const STEPS = [
+  { key: 'DRAFT', label: 'Bản nháp', icon: Edit3 },
+  { key: 'CHO_PNCKH_XEM_XET', label: 'Chờ P.NCKH', icon: Send },
+  { key: 'DANG_PHAN_BIEN', label: 'Phản biện', icon: Search },
+  { key: 'DANG_LAP_HOP_DONG', label: 'Hợp đồng', icon: FileSignature },
+  { key: 'DANG_THUC_HIEN', label: 'Thực hiện', icon: FlaskConical },
+  { key: 'HOAN_TAT', label: 'Hoàn thành', icon: CheckCircle },
+]
+const STATUS_ORDER = STEPS.map(s => s.key)
+
 function showToast(type, msg) {
   toast.value = { type, msg }
   setTimeout(() => { toast.value = null }, 4000)
 }
 
-onMounted(() => store.layChiTiet(route.params.id))
+function fmt(iso, full = false) {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  return full
+    ? date.toLocaleString('vi-VN')
+    : date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
 
-const canGuiHoSo   = computed(() =>
-  ['DRAFT', 'CHO_BO_SUNG_HO_SO', 'CHO_CHINH_SUA_THUYET_MINH'].includes(chiTiet.value?.trangThai)
-)
-const canBoSung    = computed(() => chiTiet.value?.trangThai === 'CHO_BO_SUNG_HO_SO')
-const canXemHopDong = computed(() =>
-  ['DANG_LAP_HOP_DONG', 'DANG_THUC_HIEN', 'DA_HOAN_THANH'].includes(chiTiet.value?.trangThai)
-)
+function fmtM(n) {
+  return typeof n === 'number' ? `${n.toLocaleString('vi-VN')} đ` : '—'
+}
 
-const isLoading = ref(false)
+function getStepState(stepKey, currentStatus) {
+  const stepIdx = STATUS_ORDER.indexOf(stepKey)
+  const currentIdx = STATUS_ORDER.indexOf(currentStatus)
+  if (currentIdx === -1 || stepIdx === -1) return ''
+  if (stepIdx < currentIdx) return 'done'
+  if (stepIdx === currentIdx) return 'active'
+  return ''
+}
+
 async function guiHoSo() {
+  if (!hasThuyetMinh.value) {
+    showToast('error', 'Vui lòng tải lên bản thuyết minh trước khi gửi hồ sơ.')
+    return
+  }
   try {
     isLoading.value = true
     await store.guiHoSo(route.params.id)
@@ -41,54 +96,64 @@ async function guiHoSo() {
   }
 }
 
-function fmt(iso, full = false) {
-  if (!iso) return '—'
-  if (full) return new Date(iso).toLocaleString('vi-VN')
-  return new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+async function onUploadThuyetMinh(event) {
+  const files = Array.from(event.target.files ?? [])
+  if (!files.length) return
+
+  for (const file of files) {
+    const result = await validateThuyetMinhFile(file)
+    if (!result.valid) {
+      showToast('error', result.message)
+      event.target.value = ''
+      return
+    }
+  }
+
+  try {
+    uploading.value = true
+    for (const file of files) {
+      await store.uploadFile(route.params.id, file, 'THUYET_MINH')
+    }
+    showToast('success', 'Đã tải lên bản thuyết minh.')
+  } catch (e) {
+    showToast('error', e.response?.data?.message ?? 'Không thể tải lên tài liệu.')
+  } finally {
+    uploading.value = false
+    event.target.value = ''
+  }
 }
-function fmtM(n) { return n?.toLocaleString('vi-VN') + ' đ' }
 
-// Status stepper config
-const STEPS = [
-  { key: 'DRAFT',               label: 'Bản nháp',    icon: Edit3 },
-  { key: 'CHO_PNCKH_XEM_XET',  label: 'Chờ P.NCKH', icon: Send },
-  { key: 'DANG_PHAN_BIEN',      label: 'Phản biện',   icon: Search },
-  { key: 'DANG_LAP_HOP_DONG',   label: 'Hợp đồng',   icon: FileSignature },
-  { key: 'DANG_THUC_HIEN',      label: 'Thực hiện',   icon: FlaskConical },
-  { key: 'DA_HOAN_THANH',       label: 'Hoàn thành',  icon: CheckCircle },
-]
-
-const STATUS_ORDER = STEPS.map(s => s.key)
-function getStepState(stepKey, currentStatus) {
-  const stepIdx    = STATUS_ORDER.indexOf(stepKey)
-  const currentIdx = STATUS_ORDER.indexOf(currentStatus)
-  if (stepIdx < currentIdx) return 'done'
-  if (stepIdx === currentIdx) return 'active'
-  return ''
+async function xoaTaiLieu(taiLieuId) {
+  try {
+    await store.xoaTaiLieu(route.params.id, taiLieuId)
+    showToast('success', 'Da xoa tai lieu khoi ban nhap.')
+  } catch (e) {
+    showToast('error', e.response?.data?.message ?? 'Khong the xoa tai lieu.')
+  }
 }
 </script>
 
 <template>
   <div>
-    <!-- Back -->
     <button class="btn btn-ghost btn-sm mb-4" @click="router.back()">← Quay lại danh sách</button>
 
-    <!-- Toast -->
     <div v-if="toast" class="inline-toast flex items-center gap-2" :class="toast.type">
       <CheckCircle v-if="toast.type === 'success'" :size="16" />
       <XCircle v-else :size="16" />
       <span>{{ toast.msg }}</span>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" style="display:flex;flex-direction:column;gap:12px">
+    <div v-if="loading" class="detail-loading">
       <div class="skeleton" style="height: 48px; border-radius: 8px"></div>
       <div class="skeleton" style="height: 200px; border-radius: 8px"></div>
       <div class="skeleton" style="height: 120px; border-radius: 8px"></div>
     </div>
 
+    <div v-else-if="error" class="alert alert-danger flex items-center gap-2">
+      <XCircle :size="16" /> {{ error }}
+    </div>
+
     <template v-else-if="chiTiet">
-      <!-- Title + Actions -->
       <div class="page-header mb-4">
         <div class="page-header-left">
           <div class="flex items-center gap-3 mb-2">
@@ -116,7 +181,7 @@ function getStepState(stepKey, currentStatus) {
           <button
             v-if="canGuiHoSo"
             class="btn btn-primary flex items-center gap-2"
-            :disabled="isLoading"
+            :disabled="isLoading || !hasThuyetMinh"
             @click="guiHoSo"
           >
             <span v-if="isLoading" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
@@ -125,7 +190,13 @@ function getStepState(stepKey, currentStatus) {
         </div>
       </div>
 
-      <!-- Warning if needs supplement -->
+      <div v-if="canGuiHoSo && !hasThuyetMinh" class="warning-banner mb-4 flex gap-3">
+        <AlertTriangle class="shrink-0" :size="20" />
+        <div>
+          <strong>Cần bản thuyết minh:</strong> Tải lên file PDF hoặc DOCX trước khi gửi hồ sơ.
+        </div>
+      </div>
+
       <div v-if="canBoSung" class="warning-banner mb-4 flex gap-3">
         <AlertTriangle class="shrink-0" :size="20" />
         <div>
@@ -136,21 +207,20 @@ function getStepState(stepKey, currentStatus) {
         </div>
       </div>
 
-      <!-- Contract ready banner -->
       <div v-if="chiTiet.trangThai === 'DANG_LAP_HOP_DONG'" class="info-banner mb-4 flex gap-3">
         <PartyPopper class="shrink-0" :size="20" />
         <div>
-          <strong>Hợp đồng đã sẵn sàng!</strong> Đề tài được chấp thuận. Vui lòng xem và ký xác nhận hợp đồng.
+          <strong>Hợp đồng đã sẵn sàng.</strong> Đề tài được chấp thuận, vui lòng xem và phản hồi hợp đồng.
           <button class="btn-link ml-1" @click="router.push(`/gv/de-tai/${chiTiet.id}/hop-dong`)">
-            Ký hợp đồng →
+            Xem hợp đồng →
           </button>
         </div>
       </div>
 
-      <!-- Status Stepper -->
       <div class="status-stepper mb-6">
         <div
-          v-for="step in STEPS" :key="step.key"
+          v-for="step in STEPS"
+          :key="step.key"
           class="stepper-step"
           :class="getStepState(step.key, chiTiet.trangThai)"
         >
@@ -159,54 +229,86 @@ function getStepState(stepKey, currentStatus) {
         </div>
       </div>
 
-      <!-- Content 2-col -->
       <div class="detail-layout">
-        <!-- Left: Main content -->
         <div class="detail-main">
-          <!-- Description -->
           <div class="card mb-4">
             <div class="card-header">
-              <h3 class="card-title">Mô tả & Tóm tắt</h3>
+              <h3 class="card-title">Mô tả & tóm tắt</h3>
             </div>
             <div class="card-body">
               <p v-if="chiTiet.moTa" class="detail-text">{{ chiTiet.moTa }}</p>
               <p v-else class="text-muted" style="font-style:italic">Chưa có mô tả.</p>
-
-              <div v-if="chiTiet.tomTat" class="mt-4">
-                <h4 class="field-label">Tóm tắt nghiên cứu</h4>
-                <p class="detail-text">{{ chiTiet.tomTat }}</p>
-              </div>
             </div>
           </div>
 
-          <!-- Activity timeline -->
-          <div v-if="chiTiet.lichSu?.length" class="card">
+          <div class="card mb-4">
             <div class="card-header">
-              <h3 class="card-title">Lịch sử xử lý</h3>
+              <h3 class="card-title">Thuyết minh & tài liệu</h3>
             </div>
             <div class="card-body">
-              <div class="timeline">
-                <div v-for="(ev, i) in chiTiet.lichSu" :key="i" class="timeline-item">
-                  <div class="timeline-dot active">
-                    {{ i === 0 ? '●' : '○' }}
+              <div v-if="canGuiHoSo" class="upload-panel mb-4">
+                <div>
+                  <div class="upload-title">Bản thuyết minh đề tài</div>
+                  <p class="upload-desc">Tải lên file PDF hoặc DOCX, tối đa 20MB/file trước khi gửi hồ sơ.</p>
+                </div>
+                <label class="btn btn-secondary flex items-center gap-2" :class="{ disabled: uploading }">
+                  <span v-if="uploading" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
+                  <Paperclip v-else :size="16" />
+                  {{ uploading ? 'Đang tải...' : 'Chọn file' }}
+                  <input type="file" accept=".pdf,.docx" multiple hidden :disabled="uploading" @change="onUploadThuyetMinh" />
+                </label>
+              </div>
+
+              <div v-if="!taiLieu.length" class="empty-docs">
+                <FileText :size="28" />
+                <span>Chưa có tài liệu nào được tải lên.</span>
+              </div>
+              <div v-else class="document-list">
+                <div v-for="tl in taiLieu" :key="tl.id" class="document-item">
+                  <div class="document-icon"><FileText :size="16" /></div>
+                  <div class="document-main">
+                    <div class="document-name">{{ tl.tenFile }}</div>
+                    <div class="document-meta">{{ tl.loai }} · {{ tl.size || '—' }} · {{ fmt(tl.uploadedAt, true) }}</div>
                   </div>
-                  <div class="timeline-body">
-                    <div class="timeline-title">{{ ev.hanhDong }}</div>
-                    <div class="timeline-time">{{ ev.nguoiThucHien }} · {{ fmt(ev.thoiGian, true) }}</div>
-                    <div v-if="ev.ghiChu" class="timeline-desc"
-                      style="background:var(--color-surface-alt);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);margin-top:var(--space-2)">
-                      {{ ev.ghiChu }}
-                    </div>
+                  <div class="document-actions">
+                    <a class="btn btn-ghost btn-sm" :href="tl.downloadUrl || '#'" target="_blank">Xem</a>
+                    <button
+                      v-if="canXoaTaiLieuPreview"
+                      type="button"
+                      class="btn btn-ghost btn-sm btn-danger-lite"
+                      @click="xoaTaiLieu(tl.id)"
+                    >
+                      <Trash2 :size="14" /> Xóa
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Lịch sử xử lý</h3>
+            </div>
+            <div class="card-body">
+              <div v-if="auditItems.length" class="timeline">
+                <div v-for="(ev, i) in auditItems" :key="i" class="timeline-item">
+                  <div class="timeline-dot active">{{ i === 0 ? '●' : '○' }}</div>
+                  <div class="timeline-body">
+                    <div class="timeline-title">{{ ev.action ?? ev.hanhDong }}</div>
+                    <div class="timeline-time">{{ ev.actor ?? ev.nguoiThucHien }} · {{ fmt(ev.createdAt ?? ev.thoiGian, true) }}</div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="empty-docs">
+                <Clock :size="24" />
+                <span>Chưa có lịch sử xử lý.</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Right: Meta sidebar -->
         <div class="detail-sidebar">
-          <!-- Info card -->
           <div class="card mb-4">
             <div class="card-header">
               <h3 class="card-title">Thông tin đề tài</h3>
@@ -231,7 +333,7 @@ function getStepState(stepKey, currentStatus) {
                 </div>
                 <div class="info-row">
                   <dt>Kinh phí</dt>
-                  <dd class="mono">{{ chiTiet.kinhPhi ? fmtM(chiTiet.kinhPhi) : '—' }}</dd>
+                  <dd class="mono">{{ fmtM(chiTiet.kinhPhi) }}</dd>
                 </div>
                 <div class="info-row">
                   <dt>Ngày tạo</dt>
@@ -245,38 +347,29 @@ function getStepState(stepKey, currentStatus) {
             </div>
           </div>
 
-          <!-- Thành viên -->
-          <div v-if="chiTiet.thanhVien?.length" class="card mb-4">
-            <div class="card-header"><h3 class="card-title">Thành viên</h3></div>
-            <div class="card-body" style="padding:0">
-              <div v-for="tv in chiTiet.thanhVien" :key="tv.id" class="member-row">
-                <div class="member-avatar">{{ tv.hoTen?.charAt(0) }}</div>
-                <div>
-                  <div class="member-name">{{ tv.hoTen }}</div>
-                  <div class="member-role">{{ tv.vaiTro || 'Thành viên' }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quick action buttons -->
           <div class="card">
-            <div class="card-header"><h3 class="card-title">Thao tác</h3></div>
-            <div class="card-body" style="display:flex;flex-direction:column;gap:var(--space-2)">
+            <div class="card-header">
+              <h3 class="card-title">Thao tác</h3>
+            </div>
+            <div class="card-body sidebar-actions">
               <button
-                v-if="canGuiHoSo" class="btn btn-primary w-full flex items-center justify-center gap-2"
-                :disabled="isLoading" @click="guiHoSo"
+                v-if="canGuiHoSo"
+                class="btn btn-primary w-full flex items-center justify-center gap-2"
+                :disabled="isLoading || !hasThuyetMinh"
+                @click="guiHoSo"
               >
                 <Send :size="16" /> Gửi hồ sơ tới P.NCKH
               </button>
               <button
-                v-if="canBoSung" class="btn btn-secondary w-full flex items-center justify-center gap-2"
+                v-if="canBoSung"
+                class="btn btn-secondary w-full flex items-center justify-center gap-2"
                 @click="router.push(`/gv/de-tai/${chiTiet.id}/bo-sung`)"
               >
                 <Paperclip :size="16" /> Bổ sung hồ sơ
               </button>
               <button
-                v-if="canXemHopDong" class="btn btn-secondary w-full flex items-center justify-center gap-2"
+                v-if="canXemHopDong"
+                class="btn btn-secondary w-full flex items-center justify-center gap-2"
                 @click="router.push(`/gv/de-tai/${chiTiet.id}/hop-dong`)"
               >
                 <FileText :size="16" /> Xem hợp đồng
@@ -286,16 +379,21 @@ function getStepState(stepKey, currentStatus) {
         </div>
       </div>
     </template>
-
-    <!-- Not found -->
-    <div v-else class="alert alert-danger flex items-center gap-2">
-      <XCircle :size="16" /> Không tìm thấy đề tài hoặc bạn không có quyền truy cập.
-    </div>
   </div>
 </template>
 
 <style scoped>
-.action-bar { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.action-bar {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.detail-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
 .inline-toast {
   padding: var(--space-3) var(--space-4);
@@ -303,50 +401,200 @@ function getStepState(stepKey, currentStatus) {
   font: var(--text-body);
   margin-bottom: var(--space-4);
 }
-.inline-toast.success { background: var(--color-success-bg); color: var(--color-success-text); border: 1px solid var(--color-success-border); }
-.inline-toast.error   { background: var(--color-error-bg);   color: var(--color-error-text);   border: 1px solid var(--color-error-border); }
 
-.detail-main    { display: flex; flex-direction: column; min-width: 0; }
-.detail-sidebar { display: flex; flex-direction: column; }
+.inline-toast.success {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  border: 1px solid var(--color-success-border);
+}
 
-.detail-text { font: var(--text-body-lg); color: var(--color-text-secondary); white-space: pre-wrap; line-height: 1.7; }
+.inline-toast.error {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+  border: 1px solid var(--color-error-border);
+}
 
-.field-label { font: var(--text-h4); color: var(--color-text-primary); margin-bottom: var(--space-2); }
+.detail-main,
+.detail-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 
-/* Info DL */
-.info-dl { display: flex; flex-direction: column; }
+.detail-text {
+  font: var(--text-body-lg);
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+.upload-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-alt);
+}
+
+.upload-title {
+  font: var(--text-h4);
+  color: var(--color-text-primary);
+}
+
+.upload-desc {
+  font: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.document-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.document-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.document-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.document-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.document-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.document-name {
+  font: var(--text-body);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-meta {
+  font: var(--text-caption);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.empty-docs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 88px;
+  color: var(--color-text-muted);
+  font: var(--text-body);
+  text-align: center;
+}
+
+.info-dl {
+  display: flex;
+  flex-direction: column;
+}
+
 .info-row {
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: var(--space-3) var(--space-5);
   border-bottom: 1px solid var(--color-border);
   gap: var(--space-3);
 }
-.info-row:last-child { border-bottom: none; }
-.info-row dt { font: var(--text-sm); color: var(--color-text-muted); white-space: nowrap; }
-.info-row dd { font: var(--text-body); color: var(--color-text-primary); text-align: right; }
 
-/* Members */
-.member-row {
-  display: flex; align-items: center; gap: var(--space-3);
-  padding: var(--space-3) var(--space-5);
-  border-bottom: 1px solid var(--color-border);
+.info-row:last-child {
+  border-bottom: none;
 }
-.member-row:last-child { border-bottom: none; }
-.member-avatar {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: var(--color-accent-light);
-  border: 1px solid var(--color-accent);
-  color: var(--color-accent);
-  display: flex; align-items: center; justify-content: center;
-  font: 600 13px/1 var(--font-sans);
-  flex-shrink: 0;
+
+.info-row dt {
+  font: var(--text-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
-.member-name { font: var(--text-h4); color: var(--color-text-primary); }
-.member-role { font: var(--text-sm); color: var(--color-text-muted); }
+
+.info-row dd {
+  font: var(--text-body);
+  color: var(--color-text-primary);
+  text-align: right;
+}
+
+.sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
 
 .btn-link {
-  background: none; border: none; cursor: pointer;
-  color: var(--color-accent); font: inherit; font-weight: 600; padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-accent);
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
 }
-.btn-link:hover { color: var(--color-accent-hover); }
+
+.btn-link:hover {
+  color: var(--color-accent-hover);
+}
+
+.disabled {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.btn-danger-lite {
+  color: var(--color-danger);
+}
+
+.btn-danger-lite:hover {
+  background: var(--color-danger-bg, #fff0f0);
+}
+
+@media (max-width: 768px) {
+  .upload-panel,
+  .document-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .action-bar {
+    width: 100%;
+  }
+
+  .action-bar .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .document-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
 </style>

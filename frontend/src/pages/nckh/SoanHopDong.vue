@@ -23,8 +23,8 @@ onMounted(async () => {
 async function submit() {
   submitting.value = true
   try {
-    await store.kyHopDong(route.params.id, form.value)
-    toast.add({ severity: 'success', summary: 'Hợp đồng đã được ký', life: 4000 })
+    await store.soanHopDong(route.params.id, form.value)
+    toast.add({ severity: 'success', summary: 'Hợp đồng đã gửi cho GV xem xét', life: 4000 })
     router.push('/nckh/dang-xu-ly')
   } catch (e) {
     toast.add({ severity: 'error', summary: 'Lỗi', detail: e.message, life: 5000 })
@@ -77,8 +77,8 @@ function fmtM(n) { return n?.toLocaleString('vi-VN') + ' đ' }
           <div class="form-actions">
             <button type="button" class="btn btn-secondary" @click="router.back()">Hủy</button>
             <button type="submit" class="btn btn-primary flex items-center gap-2" :disabled="submitting">
-              <span v-if="submitting">Đang ký...</span>
-              <span v-else class="flex items-center gap-2"><PenTool size="16" /> Ký và lưu hợp đồng</span>
+              <span v-if="submitting">Đang gửi...</span>
+              <span v-else class="flex items-center gap-2"><PenTool size="16" /> Lưu và gửi GV xem xét</span>
             </button>
           </div>
         </form>

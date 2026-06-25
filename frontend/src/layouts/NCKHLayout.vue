@@ -1,14 +1,25 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import api from '@/api/axios'
-import { LayoutDashboard, Inbox, Settings, LogOut } from '@lucide/vue'
+import { LayoutDashboard, Inbox, Settings, LogOut, Menu, X } from '@lucide/vue'
 
 const auth   = useAuthStore()
 const router = useRouter()
 const route  = useRoute()
 const inboxCount = ref(0)
+
+// ── Mobile Menu State ────────────────────────────────
+const isMobileMenuOpen = ref(false)
+
+watch(() => route.path, () => {
+  isMobileMenuOpen.value = false
+})
+
+watch(isMobileMenuOpen, (val) => {
+  document.body.style.overflow = val ? 'hidden' : ''
+})
 
 const initials = computed(() => {
   const name = auth.user?.hoTen ?? ''
@@ -37,8 +48,17 @@ function logout() { auth.logout(); router.push('/login') }
 
 <template>
   <div class="layout-wrapper">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <!-- ── Overlay mờ (mobile/tablet) ─────────────── -->
+    <Transition name="overlay">
+      <div
+        v-if="isMobileMenuOpen"
+        class="sidebar-overlay"
+        @click="isMobileMenuOpen = false"
+      />
+    </Transition>
+
+    <!-- ── SIDEBAR ────────────────────────────────── -->
+    <aside class="sidebar" :class="{ 'is-open': isMobileMenuOpen }">
       <div class="sidebar-logo">
         <div class="logo-mark">N</div>
         <div class="logo-text">
@@ -77,8 +97,20 @@ function logout() { auth.logout(); router.push('/login') }
       </div>
     </aside>
 
+    <!-- ── MAIN ───────────────────────────────────── -->
     <main class="main-content">
       <header class="topbar">
+        <!-- Nút Hamburger -->
+        <button
+          class="btn-menu-toggle"
+          :aria-label="isMobileMenuOpen ? 'Đóng menu' : 'Mở menu'"
+          :aria-expanded="isMobileMenuOpen"
+          @click="isMobileMenuOpen = !isMobileMenuOpen"
+        >
+          <X v-if="isMobileMenuOpen" :size="20" />
+          <Menu v-else :size="20" />
+        </button>
+
         <div class="topbar-breadcrumb">
           <span>P.NCKH</span>
           <span class="sep">/</span>
@@ -104,6 +136,7 @@ function logout() { auth.logout(); router.push('/login') }
   padding: var(--space-5) var(--space-6);
   border-bottom: 1px solid rgba(255,255,255,0.06);
   flex-shrink: 0;
+  min-height: var(--topbar-height);
 }
 .logo-mark {
   width: 32px; height: 32px;
@@ -138,5 +171,18 @@ function logout() { auth.logout(); router.push('/login') }
   font-size: 12px;
 }
 .sidebar-logout:hover { color: #CBD5E1 !important; }
-.page-content { flex: 1; padding: var(--space-8) var(--space-8); overflow-y: auto; }
+
+.page-content { flex: 1; padding: var(--space-8) var(--space-10); overflow-y: auto; }
+
+.overlay-enter-active,
+.overlay-leave-active { transition: opacity 0.2s ease; }
+.overlay-enter-from,
+.overlay-leave-to     { opacity: 0; }
+
+@media (max-width: 1024px) {
+  .page-content { padding: var(--space-6) var(--space-6); }
+}
+@media (max-width: 640px) {
+  .page-content { padding: var(--space-4) var(--space-4); }
+}
 </style>

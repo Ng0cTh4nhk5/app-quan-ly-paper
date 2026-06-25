@@ -1,6 +1,6 @@
 <script setup>
 defineProps({
-  icon:    { type: [String, Object], default: null },
+  icon:    { type: [String, Object, Function], default: null },
   title:   { type: String, default: 'Không có dữ liệu' },
   message: { type: String, default: '' },
   action:  { type: String, default: '' },
@@ -10,7 +10,7 @@ const emit = defineEmits(['action'])
 
 <template>
   <div class="empty-state">
-    <component v-if="typeof icon === 'object'" :is="icon" class="empty-icon-lucide" size="48" stroke-width="1.5" />
+    <component v-if="icon && typeof icon !== 'string'" :is="icon" class="empty-icon-lucide" size="48" stroke-width="1.5" />
     <i v-else-if="icon && icon.startsWith('pi')" :class="icon" class="empty-icon-pi"></i>
     <div v-else-if="icon" class="empty-icon">{{ icon }}</div>
     <h3 class="empty-title">{{ title }}</h3>

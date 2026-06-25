@@ -15,7 +15,7 @@ onMounted(() => store.layDanhSach())
 const list      = computed(() => store.danhSach ?? [])
 const inbox     = computed(() => list.value.filter(d => d.trangThai === 'CHO_PNCKH_XEM_XET'))
 const inProcess = computed(() => list.value.filter(d => ['DANG_PHAN_BIEN', 'DANG_LAP_HOP_DONG'].includes(d.trangThai)))
-const done      = computed(() => list.value.filter(d => d.trangThai === 'DA_HOAN_THANH'))
+const done      = computed(() => list.value.filter(d => d.trangThai === 'HOAN_TAT'))
 const urgent    = computed(() => inbox.value.slice(0, 5))
 
 const stats = [

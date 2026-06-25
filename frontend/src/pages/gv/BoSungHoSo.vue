@@ -1,10 +1,10 @@
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDetaiStore } from '@/stores/detai.store'
-import api from '@/api/axios'
 import { useToast } from '@/composables/useToast'
+import { validateThuyetMinhFile } from '@/utils/uploadValidation'
 import { ClipboardList, AlertTriangle, Clock, FolderOpen, FileText, Send, ArrowLeft, X } from '@lucide/vue'
 
 const route  = useRoute()
@@ -13,6 +13,8 @@ const store  = useDetaiStore()
 const { chiTiet, loading } = storeToRefs(store)
 const submitting  = ref(false)
 const uploadFiles = ref([])
+const now = ref(Date.now())
+let countdownTimer = null
 const { add: toastAdd } = useToast()
 
 const form = reactive({
@@ -22,6 +24,13 @@ const form = reactive({
 
 onMounted(async () => {
   await store.layChiTiet(route.params.id)
+  countdownTimer = window.setInterval(() => {
+    now.value = Date.now()
+  }, 60000)
+})
+
+onUnmounted(() => {
+  if (countdownTimer) window.clearInterval(countdownTimer)
 })
 
 const yeuCau = computed(() => {
@@ -38,11 +47,41 @@ const deadline = computed(() => {
 
 const isOverDue = computed(() => {
   if (!yeuCau.value?.deadline) return false
-  return new Date(yeuCau.value.deadline) < new Date()
+  return new Date(yeuCau.value.deadline).getTime() < now.value
 })
 
-function onFileChange(event) {
-  uploadFiles.value = Array.from(event.target.files ?? [])
+const remainingTime = computed(() => {
+  if (!yeuCau.value?.deadline) return ''
+
+  const deadlineTime = new Date(yeuCau.value.deadline).getTime()
+  const diffMs = deadlineTime - now.value
+  const absMs = Math.abs(diffMs)
+  const totalMinutes = Math.max(1, Math.floor(absMs / 60000))
+  const days = Math.floor(totalMinutes / 1440)
+  const hours = Math.floor((totalMinutes % 1440) / 60)
+  const minutes = totalMinutes % 60
+  const prefix = diffMs >= 0 ? 'Còn' : 'Đã quá hạn'
+
+  if (days > 0) return `${prefix} ${days} ngày ${String(hours).padStart(2, '0')} giờ`
+  if (hours > 0) return `${prefix} ${hours} giờ ${String(minutes).padStart(2, '0')} phút`
+  return `${prefix} ${minutes} phút`
+})
+
+async function onFileChange(event) {
+  const files = Array.from(event.target.files ?? [])
+  for (const file of files) {
+    const result = await validateThuyetMinhFile(file)
+    if (!result.valid) {
+      toastAdd({
+        severity: 'error',
+        summary: 'File khong hop le',
+        detail: result.message,
+      })
+      event.target.value = ''
+      return
+    }
+  }
+  uploadFiles.value = files
 }
 
 function removeFile(index) {
@@ -55,16 +94,14 @@ async function submit() {
   try {
     // 1. Upload files (nếu có)
     for (const file of uploadFiles.value) {
-      await api.post(`/de-tai/${route.params.id}/upload`, {
-        fileName: file.name,
-        loai: 'THUYET_MINH',
-      })
+      await store.uploadFile(route.params.id, file, 'THUYET_MINH')
     }
     // 2. Gửi bổ sung
     await store.boSungHoSo(route.params.id, {
       moTaBoSung: form.moTaBoSung,
       ...(form.kinhPhiBoSung ? { kinhPhiBoSung: form.kinhPhiBoSung } : {}),
     })
+    toastAdd({ severity: 'success', summary: 'Da gui bo sung', detail: 'Ho so da duoc gui lai cho P.NCKH.' })
     router.push(`/gv/de-tai/${route.params.id}`)
   } catch (e) {
     toastAdd({ severity: 'error', summary: 'Lỗi', detail: e.response?.data?.message ?? 'Gửi bổ sung thất bại.' })
@@ -104,8 +141,11 @@ async function submit() {
             <Clock v-else :size="14" />
             {{ isOverDue ? 'Quá hạn:' : 'Hạn nộp:' }} {{ deadline }}
           </span>
+          <span v-if="remainingTime" class="yeu-cau-countdown" :class="{ overdue: isOverDue }">
+            {{ remainingTime }}
+          </span>
         </div>
-        <p class="yeu-cau-content">{{ yeuCau.noiDung }}</p>
+        <p class="yeu-cau-content">{{ yeuCau.noiDung ?? yeuCau.lyDo ?? 'P.NCKH yeu cau bo sung ho so.' }}</p>
       </div>
 
       <div class="form-card">
@@ -113,11 +153,11 @@ async function submit() {
           <!-- Upload file -->
           <div class="form-group">
             <label class="form-label">
-              Tài liệu bổ sung <span class="text-muted text-sm">(PDF, DOC, DOCX — tối đa 20MB/file)</span>
+              Tài liệu bổ sung <span class="text-muted text-sm">(PDF, DOCX — tối đa 20MB/file)</span>
             </label>
 
             <label class="file-upload-area" :class="{ 'has-files': uploadFiles.length }">
-              <input type="file" multiple accept=".pdf,.doc,.docx,.png,.jpg" @change="onFileChange" class="file-input" />
+              <input type="file" multiple accept=".pdf,.docx" @change="onFileChange" class="file-input" />
               <div v-if="!uploadFiles.length" class="file-placeholder">
                 <span class="file-icon"><FolderOpen :size="32" /></span>
                 <span>Kéo thả hoặc <u>chọn file</u></span>
@@ -130,7 +170,7 @@ async function submit() {
                   <button type="button" class="file-item-remove" @click.stop="removeFile(i)"><X size="14" /></button>
                 </div>
                 <label class="btn btn-ghost btn-sm" style="cursor:pointer">
-                  <input type="file" multiple accept=".pdf,.doc,.docx" @change="onFileChange" style="display:none" />
+                  <input type="file" multiple accept=".pdf,.docx" @change="onFileChange" style="display:none" />
                   + Thêm file
                 </label>
               </div>
@@ -206,6 +246,13 @@ async function submit() {
   padding: 2px 8px; border-radius: 999px;
 }
 .yeu-cau-deadline.overdue { color: var(--color-danger); background: color-mix(in srgb, var(--color-danger) 15%, transparent); }
+.yeu-cau-countdown {
+  font: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-warning);
+  white-space: nowrap;
+}
+.yeu-cau-countdown.overdue { color: var(--color-danger); }
 .yeu-cau-content { font: var(--text-body); color: var(--color-text-secondary); white-space: pre-wrap; line-height: 1.7; }
 
 /* Form card */
@@ -267,5 +314,25 @@ async function submit() {
 .form-actions {
   display: flex; justify-content: flex-end; gap: var(--space-3);
   padding-top: var(--space-5); border-top: 1px solid var(--color-border); margin-top: var(--space-6);
+}
+
+@media (max-width: 640px) {
+  .yeu-cau-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .yeu-cau-title {
+    flex-basis: calc(100% - 32px);
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>

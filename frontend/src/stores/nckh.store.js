@@ -64,6 +64,12 @@ export const useNckhStore = defineStore('nckh', () => {
     return res.data
   }
 
+  async function soanHopDong(id, payload = {}) {
+    const res = await api.post(`/de-tai/${id}/hop-dong/soan`, payload)
+    chiTiet.value = res.data
+    return res.data
+  }
+
   async function kyHopDong(id, payload = {}) {
     const res = await api.post(`/de-tai/${id}/ky-hop-dong`, payload)
     chiTiet.value = res.data
@@ -72,5 +78,5 @@ export const useNckhStore = defineStore('nckh', () => {
 
   return { inbox, danhSach, chiTiet, loading,
            layInbox, layTatCa, layDanhSach, layChiTiet, tiepNhan,
-           yeuCauBoSung, lapToPhanBien, xetDuyetPB, kyHopDong }
+           yeuCauBoSung, lapToPhanBien, xetDuyetPB, soanHopDong, kyHopDong }
 })
