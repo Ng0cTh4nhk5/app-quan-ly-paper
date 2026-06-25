@@ -1,12 +1,10 @@
 package com.rgms.modules.detai.fsm.guards;
 
 import com.rgms.exception.BusinessException;
-import com.rgms.modules.detai.repository.ToPhanBienRepository;
+import com.rgms.modules.detai.repo.ToPhanBienRepository;
 import com.rgms.shared.fsm.TransitionGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 /**
  * Guard cho event PNCKH_LAP_TO_PB.
@@ -23,7 +21,7 @@ public class ToPhanBienHopLeGuard implements TransitionGuard {
     private final ToPhanBienRepository toPhanBienRepository;
 
     @Override
-    public void check(UUID deTaiId, UUID actorId) {
+    public void check(Long deTaiId, Long actorId) {
         long soThanhVien = toPhanBienRepository.countThanhVienByDeTaiId(deTaiId);
         if (soThanhVien < 2) {
             throw new BusinessException("GUARD_THIEU_THANH_VIEN_PB",

@@ -9,7 +9,6 @@ import com.rgms.modules.files.dto.TaiLieuResponse;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class DeTaiMapper {
@@ -19,7 +18,7 @@ public class DeTaiMapper {
                 .id(deTai.getId())
                 .maSo(deTai.getMaSo())
                 .tenDeTai(deTai.getTenDeTai())
-                .trangThai(deTai.getTrangThai())
+                .trangThai(deTai.getStatus() != null ? deTai.getStatus().name() : null)
                 .chuNhiem(deTai.getChuNhiem() != null ? deTai.getChuNhiem().getHoTen() : null)
                 .updatedAt(deTai.getUpdatedAt())
                 .build();
@@ -32,27 +31,33 @@ public class DeTaiMapper {
                 .id(deTai.getId())
                 .maSo(deTai.getMaSo())
                 .tenDeTai(deTai.getTenDeTai())
-                .trangThai(deTai.getTrangThai())
+                .trangThai(deTai.getStatus() != null ? deTai.getStatus().name() : null)
                 .chuNhiem(deTai.getChuNhiem() != null ? deTai.getChuNhiem().getHoTen() : null)
                 .updatedAt(deTai.getUpdatedAt())
                 .moTa(deTai.getMoTa())
                 .linhVuc(deTai.getLinhVuc())
-                .donVi(deTai.getDonVi() != null ? deTai.getDonVi().getTenDonVi() : null)
+                // DonVi.ten (không phải tenDonVi)
+                .donVi(deTai.getDonVi() != null ? deTai.getDonVi().getTen() : null)
                 .kyNckh(deTai.getKyNckh() != null ? deTai.getKyNckh().getTenKy() : null)
                 .taiLieu(taiLieu)
                 .auditLog(auditLog)
                 .build();
     }
 
-    public AuditLogEntry toAuditLogEntry(AuditLog auditLog, Map<Long, String> actorNames) {
+    /**
+     * Map AuditLog → AuditLogEntry DTO.
+     * actor là NguoiDung reference, actorId lấy từ actor.getId().
+     * Dùng trangThaiTruoc/trangThaiSau (field name của entity).
+     */
+    public AuditLogEntry toAuditLogEntry(AuditLog log) {
+        String actorName = log.getActor() != null ? log.getActor().getHoTen() : "(system)";
         return AuditLogEntry.builder()
-                .action(auditLog.getHanhDong())
-                .actor(actorNames.getOrDefault(auditLog.getActorId(), null))
-                .tuTrangThai(auditLog.getTuTrangThai())
-                .sangTrangThai(auditLog.getSangTrangThai())
-                .severity(auditLog.getSeverity())
-                .ghiChu(auditLog.getGhiChu())
-                .createdAt(auditLog.getCreatedAt())
+                .action(log.getHanhDong())
+                .actor(actorName)
+                .tuTrangThai(log.getTrangThaiTruoc())
+                .sangTrangThai(log.getTrangThaiSau())
+                .ghiChu(log.getMeta())
+                .createdAt(log.getThoiGian())
                 .build();
     }
 }

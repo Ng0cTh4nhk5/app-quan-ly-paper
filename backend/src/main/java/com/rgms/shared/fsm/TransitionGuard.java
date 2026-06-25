@@ -2,8 +2,6 @@ package com.rgms.shared.fsm;
 
 import com.rgms.exception.BusinessException;
 
-import java.util.UUID;
-
 /**
  * Contract cho tất cả guard condition trong FSM.
  *
@@ -20,9 +18,9 @@ public interface TransitionGuard {
     /**
      * Kiểm tra điều kiện tiên quyết trước khi transition.
      *
-     * @param deTaiId  UUID đề tài đang được thao tác
-     * @param actorId  UUID người thực hiện hành động (dùng để check IDOR, role...)
+     * @param deTaiId  Long ID đề tài đang được thao tác
+     * @param actorId  Long ID người thực hiện hành động (dùng để check IDOR, role...)
      * @throws BusinessException nếu vi phạm guard — message phải rõ ràng cho frontend
      */
-    void check(UUID deTaiId, UUID actorId);
+    void check(Long deTaiId, Long actorId);
 }

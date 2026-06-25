@@ -7,5 +7,7 @@ import java.util.List;
 
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
-    List<AuditLog> findByDeTaiIdOrderByCreatedAtAsc(Long deTaiId);
+    // AuditLog.deTai là ManyToOne entity, Spring Data sẽ tự join deTai.id
+    // AuditLog.thoiGian (không phải createdAt)
+    List<AuditLog> findByDeTai_IdOrderByThoiGianAsc(Long deTaiId);
 }

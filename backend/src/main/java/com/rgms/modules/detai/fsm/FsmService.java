@@ -3,10 +3,10 @@ package com.rgms.modules.detai.fsm;
 import com.rgms.exception.BusinessException;
 import com.rgms.modules.detai.entity.AuditLog;
 import com.rgms.modules.detai.entity.DeTai;
-import com.rgms.modules.detai.repository.AuditLogRepository;
-import com.rgms.modules.detai.repository.DeTaiRepository;
+import com.rgms.modules.detai.repo.AuditLogRepository;
+import com.rgms.modules.detai.repo.DeTaiRepository;
+import com.rgms.modules.detai.repo.NguoiDungRepository;
 import com.rgms.modules.nguoidung.entity.NguoiDung;
-import com.rgms.modules.nguoidung.repository.NguoiDungRepository;
 import com.rgms.shared.enums.TopicEvent;
 import com.rgms.shared.enums.TopicState;
 import com.rgms.shared.fsm.TransitionGuard;
@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * FsmService — Bộ não State Machine của hệ thống RGMS.
@@ -49,17 +48,16 @@ public class FsmService {
     /**
      * Thực hiện một state transition.
      *
-     * @param deTaiId  UUID đề tài cần chuyển trạng thái
+     * @param deTaiId  Long ID đề tài cần chuyển trạng thái
      * @param event    Sự kiện kích hoạt (TopicEvent)
-     * @param actorId  UUID người thực hiện (dùng để ghi AuditLog và guard IDOR)
-     * @param guards   Danh sách pre-condition cần check trước khi transition
+     * @param actorId  Long ID người thực hiện (dùng để ghi AuditLog)
      * @return DeTai sau khi đã cập nhật trạng thái
-     * @throws BusinessException nếu: đề tài không tồn tại, terminal state, guard fail, event không hợp lệ
+     * @throws BusinessException nếu: đề tài không tồn tại, terminal state, event không hợp lệ
      */
-    public DeTai transition(UUID deTaiId, TopicEvent event, UUID actorId, List<TransitionGuard> guards) {
+    public DeTai transition(Long deTaiId, TopicEvent event, Long actorId) {
 
-        // 1. Load đề tài — kèm chuNhiem để guard IDOR hoạt động không cần query thêm
-        DeTai deTai = deTaiRepository.findByIdWithChuNhiem(deTaiId)
+        // 1. Load đề tài
+        DeTai deTai = deTaiRepository.findById(deTaiId)
                 .orElseThrow(() -> new BusinessException("FSM_NOT_FOUND",
                         "Không tìm thấy đề tài với id: " + deTaiId));
 
@@ -71,19 +69,14 @@ public class FsmService {
                     "Đề tài đã kết thúc (trạng thái: " + currentState + "). Không thể thực hiện thêm thao tác.");
         }
 
-        // 3. Chạy tất cả guards theo thứ tự (fail-fast: guard đầu tiên vi phạm → dừng ngay)
-        for (TransitionGuard guard : guards) {
-            guard.check(deTaiId, actorId);
-        }
-
-        // 4. Tra bảng chuyển trạng thái (State × Event → NextState)
+        // 3. Tra bảng chuyển trạng thái (State × Event → NextState)
         TopicState nextState = resolveNextState(currentState, event);
 
-        // 5. Cập nhật trạng thái — DUY NHẤT nơi được phép gọi setStatus()
+        // 4. Cập nhật trạng thái — DUY NHẤT nơi được phép gọi setStatus()
         deTai.setStatus(nextState);
         DeTai saved = deTaiRepository.save(deTai);
 
-        // 6. Ghi AuditLog bất đồng bộ (vẫn trong cùng transaction để đảm bảo consistency)
+        // 5. Ghi AuditLog (trong cùng transaction để đảm bảo consistency)
         NguoiDung actor = nguoiDungRepository.findById(actorId)
                 .orElseThrow(() -> new BusinessException("FSM_ACTOR_NOT_FOUND",
                         "Không tìm thấy người dùng với id: " + actorId));
@@ -103,11 +96,23 @@ public class FsmService {
     }
 
     /**
+     * Overload hỗ trợ guards — cho phép caller truyền thêm danh sách pre-condition.
+     * Guards được chạy TRƯỚC khi tra bảng transition.
+     */
+    public DeTai transition(Long deTaiId, TopicEvent event, Long actorId, List<TransitionGuard> guards) {
+        // Chạy tất cả guards theo thứ tự (fail-fast)
+        for (TransitionGuard guard : guards) {
+            guard.check(deTaiId, actorId);
+        }
+        return transition(deTaiId, event, actorId);
+    }
+
+    /**
      * Kiểm tra xem một event có hợp lệ với trạng thái hiện tại không — không throw exception.
      * Dùng để frontend hiển thị/ẩn các nút hành động.
      */
     @Transactional(readOnly = true)
-    public boolean canTransition(UUID deTaiId, TopicEvent event) {
+    public boolean canTransition(Long deTaiId, TopicEvent event) {
         return deTaiRepository.findById(deTaiId)
                 .map(deTai -> {
                     if (deTai.getStatus().isTerminal()) return false;
@@ -204,7 +209,6 @@ public class FsmService {
             // T10: Hai bên ký hợp đồng → bắt đầu thực hiện
             // E08: GV không phản hồi HĐ quá hạn → treo
             // E21: GV rút
-            // GV_DONG_Y_HD không đổi state — chỉ set flag gvDaDongYHopDong (xử lý trong ResearchTopicService)
             case DANG_LAP_HOP_DONG -> switch (event) {
                 case HAI_BEN_KY_HD -> TopicState.DANG_THUC_HIEN;
                 case HE_THONG_TREO -> TopicState.BI_TREO;
@@ -214,16 +218,13 @@ public class FsmService {
 
             // ── S7: DANG_THUC_HIEN ───────────────────────────────────────────
             // Phase 2 sẽ thêm: GV_NOP_BAO_CAO → CHO_NGHIEM_THU
-            // Phase 1 chỉ dừng ở đây — state terminal tạm thời cho Phase 1
             case DANG_THUC_HIEN -> switch (event) {
-                // Phase 2: GV_NOP_BAO_CAO → CHO_NGHIEM_THU (sẽ bổ sung sau)
                 case HE_THONG_TREO -> TopicState.DA_HUY;   // E09: hủy khi không có tạm ứng
                 case GV_RUT        -> TopicState.DA_RUT;   // E21: rút khi không có tạm ứng
                 default -> invalidTransition(current, event);
             };
 
             // ── Terminal States — không có outgoing transition ─────────────────
-            // Đã được check ở bước 2, không bao giờ reach đây
             case BI_TREO, BI_TU_CHOI, DA_RUT, DA_HUY ->
                 throw new BusinessException("FSM_TERMINAL_STATE",
                         "Trạng thái " + current + " là terminal — không có transition nào.");

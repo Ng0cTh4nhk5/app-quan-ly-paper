@@ -1,9 +1,9 @@
 package com.rgms.modules.nguoidung.entity;
 
-import com.rgms.shared.model.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
+import java.time.LocalDateTime;
 
 /**
  * Entity DonVi — Khoa/Phòng ban trong trường.
@@ -13,7 +13,15 @@ import lombok.Setter;
 @Table(name = "don_vi")
 @Getter
 @Setter
-public class DonVi extends BaseEntity {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class DonVi {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", updatable = false, nullable = false)
+    private Long id;
 
     @Column(name = "ten", nullable = false, length = 200)
     private String ten;
@@ -28,4 +36,22 @@ public class DonVi extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "truong_don_vi_id")
     private NguoiDung truongDonVi;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

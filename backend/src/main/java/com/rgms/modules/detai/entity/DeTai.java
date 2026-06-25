@@ -93,7 +93,7 @@ public class DeTai {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ky_nckh_id", nullable = false)
-    private KyNckh kyNckh;
+    private KyNCKH kyNckh;
 
     /**
      * Nguồn khi vào Cho_Hoan_Tra_Tam_Ung.

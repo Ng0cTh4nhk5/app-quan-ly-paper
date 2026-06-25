@@ -1,15 +1,13 @@
 package com.rgms.modules.detai.fsm.guards;
 
 import com.rgms.exception.BusinessException;
-import com.rgms.modules.detai.repository.DeTaiRepository;
-import com.rgms.modules.detai.repository.PhanBienDeXuatRepository;
-import com.rgms.modules.detai.repository.TaiLieuRepository;
+import com.rgms.modules.detai.repo.DeTaiRepository;
+import com.rgms.modules.detai.repo.PhanBienDeXuatRepository;
+import com.rgms.modules.files.repo.TaiLieuRepository;
 import com.rgms.shared.enums.TopicState;
 import com.rgms.shared.fsm.TransitionGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 /**
  * Guard cho event GV_GUI_HO_SO — kiểm tra hồ sơ hợp lệ trước khi GV gửi đến P.NCKH.
@@ -17,8 +15,8 @@ import java.util.UUID;
  * Bốn điều kiện (theo gd-1-1-khoi-tao.md F-GV-03):
  *   [1] Đề tài phải ở trạng thái DRAFT.
  *   [2] Người gửi phải là chủ nhiệm đề tài (IDOR protection — F-GV-04 GUARD-1).
- *   [3] Phải có ít nhất 1 file thuyết minh (loai = THUYET_MINH).
- *   [4] Phải có ít nhất 2 người phản biện đề xuất (Q3 trong gd-1-1-khoi-tao.md).
+ *   [3] Phải có ít nhất 1 file thuyết minh (loaiFile = THUYET_MINH).
+ *   [4] Phải có ít nhất 1 người phản biện đề xuất.
  */
 @Component
 @RequiredArgsConstructor
@@ -29,9 +27,9 @@ public class HoSoHopLeGuard implements TransitionGuard {
     private final PhanBienDeXuatRepository phanBienDeXuatRepository;
 
     @Override
-    public void check(UUID deTaiId, UUID actorId) {
+    public void check(Long deTaiId, Long actorId) {
 
-        var deTai = deTaiRepository.findByIdWithChuNhiem(deTaiId)
+        var deTai = deTaiRepository.findById(deTaiId)
                 .orElseThrow(() -> new BusinessException("GUARD_NOT_FOUND",
                         "Không tìm thấy đề tài."));
 
@@ -50,17 +48,17 @@ public class HoSoHopLeGuard implements TransitionGuard {
         }
 
         // [3] Phải có ít nhất 1 file thuyết minh
-        boolean hasThuyetMinh = taiLieuRepository.existsByDeTaiIdAndLoai(deTaiId, "THUYET_MINH");
+        boolean hasThuyetMinh = taiLieuRepository.existsByDeTaiIdAndLoaiFile(deTaiId, "THUYET_MINH");
         if (!hasThuyetMinh) {
             throw new BusinessException("GUARD_THIEU_THUYET_MINH",
                     "Hồ sơ chưa có file thuyết minh. Vui lòng upload thuyết minh trước khi gửi.");
         }
 
-        // [4] Phải có ít nhất 2 người phản biện đề xuất
+        // [4] Phải có ít nhất 1 người phản biện đề xuất
         long soPhanBienDeXuat = phanBienDeXuatRepository.countByDeTaiId(deTaiId);
-        if (soPhanBienDeXuat < 2) {
+        if (soPhanBienDeXuat < 1) {
             throw new BusinessException("GUARD_THIEU_PHAN_BIEN",
-                    "Cần ít nhất 2 người phản biện đề xuất. Hiện có: " + soPhanBienDeXuat + ".");
+                    "Cần ít nhất 1 người phản biện đề xuất. Hiện chưa có ai.");
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.rgms.modules.auth;
 
 import com.rgms.exception.BusinessException;
-import com.rgms.modules.detai.entity.NguoiDung;
+import com.rgms.modules.nguoidung.entity.NguoiDung;
 import com.rgms.modules.detai.repo.NguoiDungRepository;
 import com.rgms.shared.security.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;

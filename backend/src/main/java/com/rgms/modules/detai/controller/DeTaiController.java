@@ -1,19 +1,21 @@
 package com.rgms.modules.detai.controller;
 
 import com.rgms.modules.detai.dto.*;
-import com.rgms.modules.detai.entity.DeTai;
-import com.rgms.modules.detai.entity.ThanhVienToPhanBien;
 import com.rgms.modules.detai.service.ResearchTopicService;
 import com.rgms.shared.dto.ApiResponse;
+import com.rgms.shared.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.UUID;
+import java.time.LocalDate;
 
 /**
  * DeTaiController — REST API cho Luồng 1 (Phase 1).
@@ -21,8 +23,7 @@ import java.util.UUID;
  * URL prefix: /api/v1/de-tai
  * RBAC được enforce bằng @PreAuthorize (method security).
  *
- * Actor ID lấy từ JWT principal (Authentication.getName() trả về userId string).
- * Đây là convention chung của dự án (Member F — Auth Service sẽ set principal là UUID string).
+ * Actor ID lấy từ JWT CustomUserDetails.getId() (Long).
  *
  * Tham chiếu: sop-member-a.md — Giai đoạn 5
  */
@@ -34,23 +35,43 @@ public class DeTaiController {
     private final ResearchTopicService researchTopicService;
 
     // ──────────────────────────────────────────────────────────────────────────
+    // GET /api/v1/de-tai  — Danh sách đề tài (có filter)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageDeTaiResponse>> danhSach(
+            @RequestParam(required = false) String trangThai,
+            @PageableDefault(size = 20) Pageable pageable,
+            @AuthenticationPrincipal CustomUserDetails cur) {
+
+        PageDeTaiResponse page = researchTopicService.danhSach(trangThai, pageable, cur);
+        return ResponseEntity.ok(ApiResponse.ok(page));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // GET /api/v1/de-tai/{id}  — Chi tiết đề tài
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<DeTaiDetailResponse>> chiTiet(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails cur) {
+
+        DeTaiDetailResponse detail = researchTopicService.layChiTiet(id, cur);
+        return ResponseEntity.ok(ApiResponse.ok(detail));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     // POST /api/v1/de-tai  — Giảng viên tạo đề tài mới
     // ──────────────────────────────────────────────────────────────────────────
 
     @PostMapping
     @PreAuthorize("hasRole('GIANG_VIEN')")
-    public ResponseEntity<ApiResponse<DeTai>> taoDeTai(
+    public ResponseEntity<ApiResponse<DeTaiResponse>> taoDeTai(
             @Valid @RequestBody TaoDeTaiRequest request,
-            Authentication auth) {
+            @AuthenticationPrincipal CustomUserDetails cur) {
 
-        UUID gvId = UUID.fromString(auth.getName());
-        DeTai deTai = researchTopicService.taoDeTai(
-                gvId,
-                request.getTenDeTai(),
-                request.getMoTa(),
-                request.getLinhVuc(),
-                request.getKyNckhId()
-        );
+        DeTaiResponse deTai = researchTopicService.taoDeTai(request, cur.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(deTai));
     }
@@ -61,12 +82,11 @@ public class DeTaiController {
 
     @PostMapping("/{id}/gui-ho-so")
     @PreAuthorize("hasRole('GIANG_VIEN')")
-    public ResponseEntity<ApiResponse<DeTai>> guiHoSo(
-            @PathVariable UUID id,
-            Authentication auth) {
+    public ResponseEntity<ApiResponse<DeTaiResponse>> guiHoSo(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails cur) {
 
-        UUID gvId = UUID.fromString(auth.getName());
-        DeTai result = researchTopicService.guiHoSo(id, gvId);
+        DeTaiResponse result = researchTopicService.guiHoSo(id, cur.getId());
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
@@ -76,12 +96,11 @@ public class DeTaiController {
 
     @PostMapping("/{id}/tiep-nhan")
     @PreAuthorize("hasRole('PNCKH')")
-    public ResponseEntity<ApiResponse<DeTai>> tiepNhan(
-            @PathVariable UUID id,
-            Authentication auth) {
+    public ResponseEntity<ApiResponse<DeTaiResponse>> tiepNhan(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails cur) {
 
-        UUID nckhId = UUID.fromString(auth.getName());
-        DeTai result = researchTopicService.tiepNhan(id, nckhId);
+        DeTaiResponse result = researchTopicService.tiepNhan(id, cur.getId());
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
@@ -91,14 +110,12 @@ public class DeTaiController {
 
     @PostMapping("/{id}/yeu-cau-bo-sung")
     @PreAuthorize("hasRole('PNCKH')")
-    public ResponseEntity<ApiResponse<DeTai>> yeuCauBoSung(
-            @PathVariable UUID id,
-            @RequestBody YeuCauBoSungRequest request,
-            Authentication auth) {
+    public ResponseEntity<ApiResponse<DeTaiResponse>> yeuCauBoSung(
+            @PathVariable Long id,
+            @Valid @RequestBody YeuCauBoSungRequest request,
+            @AuthenticationPrincipal CustomUserDetails cur) {
 
-        UUID nckhId = UUID.fromString(auth.getName());
-        DeTai result = researchTopicService.yeuCauBoSung(
-                id, nckhId, request.getNoiDungFeedback(), request.getDeadline());
+        DeTaiResponse result = researchTopicService.yeuCauBoSung(id, request, cur.getId());
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
@@ -108,12 +125,11 @@ public class DeTaiController {
 
     @PostMapping("/{id}/gv-nop-bo-sung")
     @PreAuthorize("hasRole('GIANG_VIEN')")
-    public ResponseEntity<ApiResponse<DeTai>> gvNopBoSung(
-            @PathVariable UUID id,
-            Authentication auth) {
+    public ResponseEntity<ApiResponse<DeTaiResponse>> gvNopBoSung(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails cur) {
 
-        UUID gvId = UUID.fromString(auth.getName());
-        DeTai result = researchTopicService.gvNopBoSung(id, gvId);
+        DeTaiResponse result = researchTopicService.gvNopBoSung(id, cur.getId());
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
@@ -123,14 +139,12 @@ public class DeTaiController {
 
     @PostMapping("/{id}/lap-to-phan-bien")
     @PreAuthorize("hasRole('PNCKH')")
-    public ResponseEntity<ApiResponse<DeTai>> lapToPhanBien(
-            @PathVariable UUID id,
-            @RequestBody LapToPhanBienRequest request,
-            Authentication auth) {
+    public ResponseEntity<ApiResponse<DeTaiResponse>> lapToPhanBien(
+            @PathVariable Long id,
+            @Valid @RequestBody LapToPhanBienRequest request,
+            @AuthenticationPrincipal CustomUserDetails cur) {
 
-        UUID nckhId = UUID.fromString(auth.getName());
-        DeTai result = researchTopicService.lapToPhanBien(
-                id, nckhId, request.getDeadlineNop(), request.getDanhSachPhanBienId());
+        DeTaiResponse result = researchTopicService.lapToPhanBien(id, request, cur.getId());
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
@@ -139,15 +153,13 @@ public class DeTaiController {
     // ──────────────────────────────────────────────────────────────────────────
 
     @PostMapping("/{id}/pb-nop-ket-qua")
-    @PreAuthorize("hasAnyRole('PNCKH', 'GIANG_VIEN')")
-    public ResponseEntity<ApiResponse<ThanhVienToPhanBien>> pbNopKetQua(
-            @PathVariable UUID id,
-            @RequestBody PbNopKetQuaRequest request,
-            Authentication auth) {
+    @PreAuthorize("hasRole('GIANG_VIEN')")
+    public ResponseEntity<ApiResponse<DeTaiResponse>> pbNopKetQua(
+            @PathVariable Long id,
+            @Valid @RequestBody KetQuaPBRequest request,
+            @AuthenticationPrincipal CustomUserDetails cur) {
 
-        UUID pbId = UUID.fromString(auth.getName());
-        ThanhVienToPhanBien result = researchTopicService.pbNopKetQua(
-                id, pbId, request.getKetQua(), request.getNhanXet());
+        DeTaiResponse result = researchTopicService.pbNopKetQua(id, request, cur.getId());
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
@@ -157,14 +169,12 @@ public class DeTaiController {
 
     @PostMapping("/{id}/xet-duyet-pb")
     @PreAuthorize("hasRole('PNCKH')")
-    public ResponseEntity<ApiResponse<DeTai>> xetDuyetPB(
-            @PathVariable UUID id,
-            @RequestBody XetDuyetPBRequest request,
-            Authentication auth) {
+    public ResponseEntity<ApiResponse<DeTaiResponse>> xetDuyetPB(
+            @PathVariable Long id,
+            @Valid @RequestBody XetDuyetPBRequest request,
+            @AuthenticationPrincipal CustomUserDetails cur) {
 
-        UUID nckhId = UUID.fromString(auth.getName());
-        DeTai result = researchTopicService.nckhXetDuyetPB(
-                id, nckhId, request.getQuyetDinh(), request.getGhiChu());
+        DeTaiResponse result = researchTopicService.xetDuyetPB(id, request, cur.getId());
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
@@ -174,27 +184,31 @@ public class DeTaiController {
 
     @PostMapping("/{id}/gv-dong-y-hop-dong")
     @PreAuthorize("hasRole('GIANG_VIEN')")
-    public ResponseEntity<ApiResponse<DeTai>> gvDongYHopDong(
-            @PathVariable UUID id,
-            Authentication auth) {
+    public ResponseEntity<ApiResponse<DeTaiResponse>> gvDongYHopDong(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails cur) {
 
-        UUID gvId = UUID.fromString(auth.getName());
-        DeTai result = researchTopicService.gvDongYHopDong(id, gvId);
+        // GV đồng ý → dongY = true, ghiChu = null
+        PhanHoiHopDongRequest req = new PhanHoiHopDongRequest();
+        req.setDongY(Boolean.TRUE);
+        DeTaiResponse result = researchTopicService.phanHoiHopDong(id, req, cur.getId());
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // POST /api/v1/de-tai/{id}/ky-hop-dong  — PNCKH ký hợp đồng chính thức
+    // POST /api/v1/de-tai/{id}/ky-hop-dong  — PNCKH ký hợp đồng (upload scan)
     // ──────────────────────────────────────────────────────────────────────────
 
     @PostMapping("/{id}/ky-hop-dong")
     @PreAuthorize("hasRole('PNCKH')")
-    public ResponseEntity<ApiResponse<DeTai>> kyHopDong(
-            @PathVariable UUID id,
-            Authentication auth) {
+    public ResponseEntity<ApiResponse<DeTaiResponse>> kyHopDong(
+            @PathVariable Long id,
+            @RequestParam("fileScan") MultipartFile fileScan,
+            @RequestParam("ngayKy") String ngayKy,
+            @AuthenticationPrincipal CustomUserDetails cur) {
 
-        UUID nckhId = UUID.fromString(auth.getName());
-        DeTai result = researchTopicService.kyHopDong(id, nckhId);
+        DeTaiResponse result = researchTopicService.kyHopDong(
+                id, fileScan, LocalDate.parse(ngayKy), cur.getId());
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
@@ -204,12 +218,11 @@ public class DeTaiController {
 
     @PostMapping("/{id}/rut")
     @PreAuthorize("hasRole('GIANG_VIEN')")
-    public ResponseEntity<ApiResponse<DeTai>> rutDeTai(
-            @PathVariable UUID id,
-            Authentication auth) {
+    public ResponseEntity<ApiResponse<DeTaiResponse>> rutDeTai(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails cur) {
 
-        UUID gvId = UUID.fromString(auth.getName());
-        DeTai result = researchTopicService.gvRutDeTai(id, gvId);
+        DeTaiResponse result = researchTopicService.gvRutDeTai(id, cur.getId());
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 }

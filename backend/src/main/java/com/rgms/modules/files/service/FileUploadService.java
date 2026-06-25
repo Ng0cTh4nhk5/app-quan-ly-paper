@@ -4,6 +4,7 @@ import com.rgms.exception.BusinessException;
 import com.rgms.exception.ResourceNotFoundException;
 import com.rgms.modules.detai.entity.DeTai;
 import com.rgms.modules.detai.repo.DeTaiRepository;
+import com.rgms.shared.enums.TopicState;
 import com.rgms.modules.files.entity.TaiLieu;
 import com.rgms.modules.files.repo.TaiLieuRepository;
 import lombok.Getter;
@@ -25,7 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Set;
-import java.util.UUID;
+import java.util.UUID; // UUID.randomUUID() — chỉ dùng để tạo tên file vật lý, không phải DB ID
 
 @Service
 @RequiredArgsConstructor
@@ -45,10 +46,10 @@ public class FileUploadService {
             "KET_QUA_PB",
             "HOP_DONG"
     );
-    private static final Set<String> ALLOWED_UPLOAD_STATES = Set.of(
-            "DRAFT",
-            "CHO_BO_SUNG_HO_SO",
-            "CHO_CHINH_SUA_THUYET_MINH"
+    private static final Set<TopicState> ALLOWED_UPLOAD_STATES = Set.of(
+            TopicState.DRAFT,
+            TopicState.CHO_BO_SUNG_HO_SO,
+            TopicState.CHO_CHINH_SUA_THUYET_MINH
     );
     private static final String PDF_TYPE = "application/pdf";
 
@@ -177,9 +178,9 @@ public class FileUploadService {
         if (deTai.getChuNhiem() == null || !deTai.getChuNhiem().getId().equals(uploaderId)) {
             throw new BusinessException("Bạn không có quyền upload file cho đề tài này.", HttpStatus.FORBIDDEN);
         }
-        if (!ALLOWED_UPLOAD_STATES.contains(deTai.getTrangThai())) {
+        if (!ALLOWED_UPLOAD_STATES.contains(deTai.getStatus())) {
             throw new BusinessException(
-                    "Không thể upload file ở trạng thái " + deTai.getTrangThai() + ".",
+                    "Không thể upload file ở trạng thái " + deTai.getStatus() + ".",
                     HttpStatus.CONFLICT);
         }
     }

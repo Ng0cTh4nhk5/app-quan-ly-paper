@@ -1,12 +1,10 @@
 package com.rgms.modules.detai.fsm.guards;
 
 import com.rgms.exception.BusinessException;
-import com.rgms.modules.detai.repository.DeTaiRepository;
+import com.rgms.modules.detai.repo.DeTaiRepository;
 import com.rgms.shared.fsm.TransitionGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 /**
  * Guard cho event HAI_BEN_KY_HD (Ký hợp đồng hoàn tất).
@@ -23,7 +21,7 @@ public class GvDaDongYHopDongGuard implements TransitionGuard {
     private final DeTaiRepository deTaiRepository;
 
     @Override
-    public void check(UUID deTaiId, UUID actorId) {
+    public void check(Long deTaiId, Long actorId) {
         var deTai = deTaiRepository.findById(deTaiId)
                 .orElseThrow(() -> new BusinessException("GUARD_NOT_FOUND", "Không tìm thấy đề tài."));
 

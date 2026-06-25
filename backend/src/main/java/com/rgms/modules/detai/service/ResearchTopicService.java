@@ -1,4 +1,4 @@
-﻿package com.rgms.modules.detai.service;
+package com.rgms.modules.detai.service;
 
 import com.rgms.exception.BusinessException;
 import com.rgms.exception.ResourceNotFoundException;
@@ -6,13 +6,13 @@ import com.rgms.modules.detai.dto.*;
 import com.rgms.modules.detai.entity.*;
 import com.rgms.modules.detai.fsm.FsmService;
 import com.rgms.modules.detai.mapper.DeTaiMapper;
-import com.rgms.modules.detai.repository.*;
+import com.rgms.modules.detai.repo.*;
 import com.rgms.modules.email.EmailService;
 import com.rgms.modules.files.mapper.TaiLieuMapper;
-import com.rgms.modules.files.repository.TaiLieuRepository;
+import com.rgms.modules.files.repo.TaiLieuRepository;
 import com.rgms.modules.files.service.FileUploadService;
 import com.rgms.modules.nguoidung.entity.NguoiDung;
-import com.rgms.modules.nguoidung.repository.NguoiDungRepository;
+import com.rgms.modules.detai.repo.NguoiDungRepository;
 import com.rgms.shared.enums.TopicEvent;
 import com.rgms.shared.enums.TopicState;
 import com.rgms.shared.security.CustomUserDetails;
@@ -60,7 +60,7 @@ public class ResearchTopicService {
 
     private final FsmService                    fsmService;
     private final DeTaiRepository               deTaiRepository;
-    private final KyNckhRepository              kyNckhRepository;
+    private final KyNCKHRepository              kyNckhRepository;
     private final NguoiDungRepository           nguoiDungRepository;
     private final TaiLieuRepository             taiLieuRepository;
     private final AuditLogRepository            auditLogRepository;
@@ -78,7 +78,7 @@ public class ResearchTopicService {
     public DeTaiResponse taoDeTai(TaoDeTaiRequest req, Long gvId) {
         NguoiDung gv = loadUser(gvId);
         requireRole(gv, ROLE_GV);
-        KyNckh ky = kyNckhRepository.findById(req.getKyNckhId())
+        KyNCKH ky = kyNckhRepository.findById(req.getKyNckhId())
                 .orElseThrow(() -> new BusinessException("Kỳ NCKH không tồn tại.", HttpStatus.BAD_REQUEST));
         if (!"DANG_MO".equals(ky.getTrangThai()))
             throw new BusinessException("Kỳ NCKH đã đóng.", HttpStatus.BAD_REQUEST);
@@ -115,8 +115,8 @@ public class ResearchTopicService {
             throw new AccessDeniedException("Bạn không có quyền xem đề tài này.");
         var tl = taiLieuRepository.findByDeTaiIdOrderByUploadedAtDesc(id)
                 .stream().map(taiLieuMapper::toResponse).toList();
-        var logs = auditLogRepository.findByDeTaiIdOrderByCreatedAtAsc(id);
-        var entries = logs.stream().map(a -> deTaiMapper.toAuditLogEntry(a, loadActorNames(logs))).toList();
+        var logs = auditLogRepository.findByDeTai_IdOrderByThoiGianAsc(id);
+        var entries = logs.stream().map(deTaiMapper::toAuditLogEntry).toList();
         return deTaiMapper.toDetailResponse(dt, tl, entries);
     }
 
@@ -159,7 +159,7 @@ public class ResearchTopicService {
         requireRole(loadUser(nckhId), ROLE_NCK);
         DeTai dt = loadDeTai(id); requireState(dt, TopicState.DANG_XEM_XET_BOI_PNCKH);
         Feedback fb = new Feedback();
-        fb.setDeTai(dt); fb.setLoai(FB_BOSUN); fb.setNoiDung(req.getNoiDung().trim());
+        fb.setDeTaiId(dt.getId()); fb.setLoai(FB_BOSUN); fb.setNoiDung(req.getNoiDung().trim());
         fb.setDeadlinePhanHoi(toEndOfDay(req.getDeadlinePhanHoi()));
         fb.setTrangThai(FB_CHO_XL); fb.setNguoiTaoId(nckhId);
         feedbackRepository.save(fb);
@@ -281,7 +281,7 @@ public class ResearchTopicService {
                 throw new BusinessException("Deadline ná»™p láº¡i lÃ  báº¯t buá»™c khi yÃªu cáº§u sá»­a.", HttpStatus.BAD_REQUEST);
             tpb.setKetQuaTongHop(KQ_CAN_SUA); toPhanBienRepository.save(tpb);
             Feedback fb = new Feedback();
-            fb.setDeTai(dt); fb.setLoai(FB_KQPB); fb.setNoiDung(nd);
+            fb.setDeTaiId(dt.getId()); fb.setLoai(FB_KQPB); fb.setNoiDung(nd);
             fb.setDeadlinePhanHoi(toEndOfDay(req.getDeadlineNopLai()));
             fb.setTrangThai(FB_CHO_XL); fb.setNguoiTaoId(nckhId);
             feedbackRepository.save(fb);
@@ -327,7 +327,7 @@ public class ResearchTopicService {
         if (hopDongRepository.existsByDeTaiId(id))
             throw new BusinessException("Äá» tÃ i Ä‘Ã£ cÃ³ há»£p Ä‘á»“ng.", HttpStatus.CONFLICT);
         HopDong hd = new HopDong();
-        hd.setDeTai(dt); hd.setKinhPhi(req.getKinhPhi());
+        hd.setDeTaiId(dt.getId()); hd.setKinhPhi(req.getKinhPhi());
         hd.setNgayBatDau(req.getNgayBatDau()); hd.setNgayKetThuc(req.getNgayKetThuc());
         hd.setTyLeTamUng(req.getTyLeTamUng()); hd.setTrangThaiHopDong(HD_CHO_PH);
         hopDongRepository.save(hd);
@@ -359,7 +359,7 @@ public class ResearchTopicService {
         String gc = requireText(req.getNoiDungGhiChu(), "Ná»™i dung gÃ³p Ã½ lÃ  báº¯t buá»™c khi khÃ´ng Ä‘á»“ng Ã½.");
         hd.setTrangThaiHopDong(HD_YEU_SUA); hopDongRepository.save(hd);
         Feedback fb = new Feedback();
-        fb.setDeTai(dt); fb.setLoai(FB_HD); fb.setNoiDung(gc);
+        fb.setDeTaiId(dt.getId()); fb.setLoai(FB_HD); fb.setNoiDung(gc);
         fb.setTrangThai(FB_CHO_XL); fb.setNguoiTaoId(gvId);
         feedbackRepository.save(fb);
         recordAudit(dt, "GV_PHAN_HOI_HOP_DONG", gvId, TopicState.DANG_LAP_HOP_DONG.name(),

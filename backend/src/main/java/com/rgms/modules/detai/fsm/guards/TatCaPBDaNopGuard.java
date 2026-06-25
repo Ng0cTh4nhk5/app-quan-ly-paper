@@ -1,12 +1,10 @@
 package com.rgms.modules.detai.fsm.guards;
 
 import com.rgms.exception.BusinessException;
-import com.rgms.modules.detai.repository.ToPhanBienRepository;
+import com.rgms.modules.detai.repo.ToPhanBienRepository;
 import com.rgms.shared.fsm.TransitionGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 /**
  * Guard cho event PNCKH_ACCEPT_PB (P.NCKH chấp nhận kết quả phản biện).
@@ -23,7 +21,7 @@ public class TatCaPBDaNopGuard implements TransitionGuard {
     private final ToPhanBienRepository toPhanBienRepository;
 
     @Override
-    public void check(UUID deTaiId, UUID actorId) {
+    public void check(Long deTaiId, Long actorId) {
         long soChuaNop = toPhanBienRepository.countPhanBienChuaNopByDeTaiId(deTaiId);
         if (soChuaNop > 0) {
             throw new BusinessException("GUARD_PB_CHUA_NOP",

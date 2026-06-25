@@ -1,8 +1,7 @@
 package com.rgms.modules.detai.scheduler;
 
 import com.rgms.modules.detai.entity.DeTai;
-import com.rgms.modules.detai.repository.DeTaiRepository;
-import com.rgms.modules.detai.repository.KyNckhRepository;
+import com.rgms.modules.detai.repo.DeTaiRepository;
 import com.rgms.modules.detai.service.ResearchTopicService;
 import com.rgms.shared.enums.TopicState;
 import lombok.RequiredArgsConstructor;
@@ -13,14 +12,13 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * DeTaiScheduler — Scheduler auto-treo đề tài quá hạn (E1, E2, E6, E8).
  *
  * Cấu hình:
  *   - Chạy mỗi ngày 01:00 AM (cron: "0 0 1 * * ?")
- *   - System Actor ID = Admin account (seed trong V1_1__seed_data.sql)
+ *   - System Actor ID = 1L (Admin account, seed trong V1_1__seed_data.sql)
  *   - draft_expiry_days: lấy từ cau_hinh_he_thong (mặc định 30 ngày)
  *
  * Các trường hợp auto-treo:
@@ -39,9 +37,8 @@ public class DeTaiScheduler {
     private final DeTaiRepository deTaiRepository;
     private final ResearchTopicService researchTopicService;
 
-    /** UUID của tài khoản Admin system (xem V1_1__seed_data.sql) */
-    private static final UUID SYSTEM_ACTOR_ID =
-            UUID.fromString("00000000-0000-7000-8000-000000000010");
+    /** Long ID của tài khoản Admin system (xem V1_1__seed_data.sql — id=1) */
+    private static final Long SYSTEM_ACTOR_ID = 1L;
 
     /** Số ngày tối đa ở DRAFT trước khi treo (E1). Overridable từ config. */
     @Value("${rgms.scheduler.draft-expiry-days:30}")
@@ -67,12 +64,11 @@ public class DeTaiScheduler {
         int count = 0;
 
         for (DeTai deTai : danhSach) {
-            // ngayTao nằm trong BaseEntity
-            if (deTai.getNgayTao() != null && deTai.getNgayTao().isBefore(cutoff)) {
+            if (deTai.getCreatedAt() != null && deTai.getCreatedAt().isBefore(cutoff)) {
                 try {
                     researchTopicService.autoTreoDeTai(deTai.getId(), SYSTEM_ACTOR_ID);
                     count++;
-                    log.info("[Scheduler-E1] Auto-treo DRAFT id={} ngayTao={}", deTai.getId(), deTai.getNgayTao());
+                    log.info("[Scheduler-E1] Auto-treo DRAFT id={} createdAt={}", deTai.getId(), deTai.getCreatedAt());
                 } catch (Exception e) {
                     log.error("[Scheduler-E1] Lỗi khi treo deTai id={}: {}", deTai.getId(), e.getMessage());
                 }
@@ -100,12 +96,12 @@ public class DeTaiScheduler {
         int count = 0;
 
         for (DeTai deTai : danhSach) {
-            if (deTai.getNgayCapNhat() != null && deTai.getNgayCapNhat().isBefore(cutoff)) {
+            if (deTai.getUpdatedAt() != null && deTai.getUpdatedAt().isBefore(cutoff)) {
                 try {
                     researchTopicService.autoTreoDeTai(deTai.getId(), SYSTEM_ACTOR_ID);
                     count++;
-                    log.info("[Scheduler-E2] Auto-treo CHO_BO_SUNG_HO_SO id={} ngayCapNhat={}",
-                            deTai.getId(), deTai.getNgayCapNhat());
+                    log.info("[Scheduler-E2] Auto-treo CHO_BO_SUNG_HO_SO id={} updatedAt={}",
+                            deTai.getId(), deTai.getUpdatedAt());
                 } catch (Exception e) {
                     log.error("[Scheduler-E2] Lỗi khi treo deTai id={}: {}", deTai.getId(), e.getMessage());
                 }
@@ -129,7 +125,7 @@ public class DeTaiScheduler {
         int count = 0;
 
         for (DeTai deTai : danhSach) {
-            if (deTai.getNgayCapNhat() != null && deTai.getNgayCapNhat().isBefore(cutoff)) {
+            if (deTai.getUpdatedAt() != null && deTai.getUpdatedAt().isBefore(cutoff)) {
                 try {
                     researchTopicService.autoTreoDeTai(deTai.getId(), SYSTEM_ACTOR_ID);
                     count++;
@@ -157,10 +153,9 @@ public class DeTaiScheduler {
         int count = 0;
 
         for (DeTai deTai : danhSach) {
-            // Treo nếu GV vẫn chưa đồng ý HĐ sau X ngày
             boolean gvChuaDongY = Boolean.FALSE.equals(deTai.getGvDaDongYHopDong());
-            boolean quaHan = deTai.getNgayCapNhat() != null
-                    && deTai.getNgayCapNhat().isBefore(cutoff);
+            boolean quaHan = deTai.getUpdatedAt() != null
+                    && deTai.getUpdatedAt().isBefore(cutoff);
 
             if (gvChuaDongY && quaHan) {
                 try {

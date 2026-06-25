@@ -1,15 +1,10 @@
 package com.rgms.modules.detai.fsm.guards;
 
 import com.rgms.exception.BusinessException;
-import com.rgms.modules.detai.repository.DeTaiRepository;
-import com.rgms.modules.nguoidung.entity.NguoiDung;
-import com.rgms.modules.nguoidung.model.Role;
-import com.rgms.modules.nguoidung.repository.NguoiDungRepository;
+import com.rgms.modules.detai.repo.DeTaiRepository;
 import com.rgms.shared.fsm.TransitionGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 /**
  * Guard kiểm tra IDOR — người thực hiện phải là chủ nhiệm của đề tài.
@@ -26,8 +21,8 @@ public class ChuNhiemGuard implements TransitionGuard {
     private final DeTaiRepository deTaiRepository;
 
     @Override
-    public void check(UUID deTaiId, UUID actorId) {
-        var deTai = deTaiRepository.findByIdWithChuNhiem(deTaiId)
+    public void check(Long deTaiId, Long actorId) {
+        var deTai = deTaiRepository.findById(deTaiId)
                 .orElseThrow(() -> new BusinessException("GUARD_NOT_FOUND", "Không tìm thấy đề tài."));
 
         if (!deTai.getChuNhiem().getId().equals(actorId)) {

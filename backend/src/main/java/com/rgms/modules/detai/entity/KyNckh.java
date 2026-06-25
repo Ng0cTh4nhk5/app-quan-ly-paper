@@ -1,44 +1,46 @@
 package com.rgms.modules.detai.entity;
 
-import com.rgms.shared.model.BaseEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-/**
- * Entity KyNckh — Kỳ Nghiên Cứu Khoa Học.
- * Tham chiếu: er-diagram.md — Entity 4. KyNCKH
- *
- * Guard F-GV-01 GUARD-3: KyNCKH.trangThai phải == DANG_MO khi GV tạo đề tài.
- */
 @Entity
 @Table(name = "ky_nckh")
 @Getter
 @Setter
-public class KyNckh extends BaseEntity {
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class KyNCKH {
 
-    @Column(name = "ten", nullable = false, length = 200)
-    private String ten; // "Kỳ NCKH 2025–2026 (HK1)"
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "nam_hoc", nullable = false, length = 20)
-    private String namHoc; // "2025-2026"
+    @Column(name = "ten_ky", nullable = false)
+    private String tenKy;
 
-    @Column(name = "ngay_bat_dau_dang_ky", nullable = false)
-    private LocalDate ngayBatDauDangKy;
+    @Column(name = "trang_thai", nullable = false, length = 50)
+    private String trangThai;
 
-    @Column(name = "ngay_ket_thuc_dang_ky", nullable = false)
-    private LocalDate ngayKetThucDangKy;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    /**
-     * Trạng thái cổng đăng ký.
-     * SAP_MO | DANG_MO | DA_DONG
-     */
-    @Column(name = "trang_thai", nullable = false, length = 20)
-    private String trangThai = "SAP_MO";
-
-    public boolean isDangMo() {
-        return "DANG_MO".equals(trangThai);
+    @PrePersist
+    void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
 }

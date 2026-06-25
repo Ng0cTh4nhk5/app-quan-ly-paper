@@ -1,7 +1,5 @@
 package com.rgms.modules.detai.event;
 
-import java.util.UUID;
-
 /**
  * Domain event: GV đã gửi hồ sơ đến P.NCKH thành công.
  *
@@ -10,4 +8,4 @@ import java.util.UUID;
  *
  * Tham chiếu: sop-member-a.md — ResearchTopicService.guiHoSo()
  */
-public record HoSoGuiEvent(UUID deTaiId, UUID gvId) {}
+public record HoSoGuiEvent(Long deTaiId, Long gvId) {}
