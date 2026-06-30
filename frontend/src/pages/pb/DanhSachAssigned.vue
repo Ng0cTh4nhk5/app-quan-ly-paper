@@ -40,7 +40,7 @@ function fmt(iso) { return new Date(iso).toLocaleDateString('vi-VN') }
           <div class="assigned-name">{{ dt.tenDeTai }}</div>
           <div class="assigned-meta">
             <span class="mono text-sm">{{ dt.maSo }}</span> ·
-            <span class="text-muted text-sm">{{ dt.giangVien?.hoTen }}</span> ·
+            <span class="text-muted text-sm">{{ dt.giangVien?.hoTen ?? dt.chuNhiem }}</span> ·
             <span class="text-muted text-sm">{{ dt.kyNckh }}</span>
           </div>
         </div>

@@ -52,7 +52,7 @@ function fmtM(n) { return n?.toLocaleString('vi-VN') + ' đ' }
         <div class="preview-body">
           <p><strong>Đề tài:</strong> {{ chiTiet.tenDeTai }}</p>
           <p><strong>Mã số:</strong> <span class="mono">{{ chiTiet.maSo }}</span></p>
-          <p><strong>Chủ nhiệm:</strong> {{ chiTiet.giangVien?.hoTen }}</p>
+          <p><strong>Chủ nhiệm:</strong> {{ chiTiet.giangVien?.hoTen ?? chiTiet.chuNhiem }}</p>
           <p><strong>Kinh phí:</strong> {{ form.kinhPhi ? fmtM(form.kinhPhi) : '—' }}</p>
           <p><strong>Thời gian:</strong> {{ form.thoiGian }} tháng</p>
           <p v-if="form.ghiChu"><strong>Ghi chú:</strong> {{ form.ghiChu }}</p>

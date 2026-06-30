@@ -243,7 +243,7 @@ export function getDeTaiByRole(role, userId) {
   if (role === 'NCKH') return _deTaiList
   if (role === 'TO_PHAN_BIEN') return _deTaiList.filter(d =>
     d.trangThai === 'DANG_PHAN_BIEN' &&
-    d.toPhanBien?.some(pb => pb.id === userId)
+    d.toPhanBien?.some(pb => pb.id === userId && !pb.ketQua)
   )
   return []
 }

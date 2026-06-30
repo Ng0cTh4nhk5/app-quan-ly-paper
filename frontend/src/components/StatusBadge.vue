@@ -15,12 +15,17 @@ const CONFIG = {
   DANG_LAP_HOP_DONG: { label: 'Đang lập HĐ', cls: 'badge-info', dot: '#06B6D4' },
   DANG_THUC_HIEN: { label: 'Đang thực hiện', cls: 'badge-success', dot: '#10B981' },
   CHO_NGHIEM_THU: { label: 'Chờ nghiệm thu', cls: 'badge-info', dot: '#6366F1' },
-  DANG_NGHIEM_THU: { label: 'Đang nghiệm thu', cls: 'badge-info', dot: '#7C3AED' },
+  CHO_CHINH_SUA_SAU_NGHIEM_THU: { label: 'Chờ sửa sau NT', cls: 'badge-warning', dot: '#7C3AED' },
   CHO_QUYET_TOAN: { label: 'Chờ quyết toán', cls: 'badge-warning', dot: '#F59E0B' },
+  DANG_QUYET_TOAN: { label: 'Đang quyết toán', cls: 'badge-warning', dot: '#F97316' },
+  CHO_HOAN_TRA_TAM_UNG: { label: 'Chờ hoàn trả tạm ứng', cls: 'badge-warning', dot: '#B45309' },
   HOAN_TAT: { label: 'Hoàn tất', cls: 'badge-success', dot: '#047857' },
   BI_TREO: { label: 'Bị treo', cls: 'badge-danger', dot: '#EF4444' },
   BI_TU_CHOI: { label: 'Bị từ chối', cls: 'badge-danger', dot: '#991B1B' },
+  DA_HUY: { label: 'Đã hủy', cls: 'badge-danger', dot: '#DC2626' },
   DA_RUT: { label: 'Đã rút', cls: 'badge-secondary', dot: '#64748B' },
+  KHONG_NGHIEM_THU: { label: 'Không nghiệm thu', cls: 'badge-danger', dot: '#B91C1C' },
+  BI_THU_HOI: { label: 'Bị thu hồi', cls: 'badge-danger', dot: '#7F1D1D' },
 }
 
 const cfg = computed(() => CONFIG[props.status] ?? {

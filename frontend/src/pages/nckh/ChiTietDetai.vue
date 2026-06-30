@@ -12,7 +12,7 @@ const route  = useRoute()
 const router = useRouter()
 const store  = useNckhStore()
 const toast  = useToast()
-const { chiTiet, loading } = storeToRefs(store)
+const { chiTiet, loading, canActions } = storeToRefs(store)
 
 // Dialogs
 const showYeuCauDialog  = ref(false)
@@ -22,17 +22,30 @@ const lyDoYeuCau = ref('')
 const selectedPB = ref([])
 const ketQuaPB   = ref('CHAP_THUAN')
 const ghiChuPB   = ref('')
+const MIN_YEU_CAU_LENGTH = 20
+const MIN_PB_MEMBERS = 2
 
-onMounted(() => store.layChiTiet(route.params.id))
+onMounted(async () => {
+  await store.layChiTiet(route.params.id)
+  await store.layCanActions(route.params.id)
+})
 
-const canTiepNhan    = computed(() => chiTiet.value?.trangThai === 'CHO_PNCKH_XEM_XET')
-const canYeuCauBoSung= computed(() => chiTiet.value?.trangThai === 'DANG_XEM_XET_BOI_PNCKH')
-const canLapPB       = computed(() => chiTiet.value?.trangThai === 'DANG_XEM_XET_BOI_PNCKH')
-const canXetDuyetPB  = computed(() => chiTiet.value?.trangThai === 'DANG_PHAN_BIEN')
+function actionAllowed(action, fallback) {
+  return Object.prototype.hasOwnProperty.call(canActions.value, action)
+    ? !!canActions.value[action]
+    : fallback
+}
+
+const canTiepNhan    = computed(() => actionAllowed('tiepNhan', chiTiet.value?.trangThai === 'CHO_PNCKH_XEM_XET'))
+const canYeuCauBoSung= computed(() => actionAllowed('yeuCauBoSung', chiTiet.value?.trangThai === 'DANG_XEM_XET_BOI_PNCKH'))
+const canLapPB       = computed(() => actionAllowed('lapToPhanBien', chiTiet.value?.trangThai === 'DANG_XEM_XET_BOI_PNCKH'))
+const canXetDuyetPB  = computed(() => actionAllowed('xetDuyetPB', chiTiet.value?.trangThai === 'DANG_PHAN_BIEN'))
 const canKyHopDong = computed(() =>
-  chiTiet.value?.trangThai === 'DANG_LAP_HOP_DONG' &&
-  chiTiet.value?.gvDaDongYHopDong &&
-  !chiTiet.value?.hopDongFeedback
+  actionAllowed('kyHopDong',
+    chiTiet.value?.trangThai === 'DANG_LAP_HOP_DONG' &&
+    chiTiet.value?.gvDaDongYHopDong &&
+    !chiTiet.value?.hopDongFeedback
+  )
 )
 
 const pbMembers = Object.values(MOCK_USERS).filter(u => u.role === 'TO_PHAN_BIEN')
@@ -45,9 +58,13 @@ async function tiepNhan() {
 }
 
 async function submitYeuCau() {
-  if (!lyDoYeuCau.value.trim()) return
+  const lyDo = lyDoYeuCau.value.trim()
+  if (lyDo.length < MIN_YEU_CAU_LENGTH) {
+    toast.add({ severity: 'warning', summary: `Noi dung yeu cau can it nhat ${MIN_YEU_CAU_LENGTH} ky tu`, life: 3000 })
+    return
+  }
   try {
-    await store.yeuCauBoSung(route.params.id, { lyDo: lyDoYeuCau.value })
+    await store.yeuCauBoSung(route.params.id, { lyDo })
     showYeuCauDialog.value = false
     lyDoYeuCau.value = ''
     toast.add({ severity: 'success', summary: 'Đã gửi yêu cầu bổ sung', life: 3000 })
@@ -55,7 +72,10 @@ async function submitYeuCau() {
 }
 
 async function submitLapPB() {
-  if (!selectedPB.value.length) return
+  if (selectedPB.value.length < MIN_PB_MEMBERS) {
+    toast.add({ severity: 'warning', summary: `Can it nhat ${MIN_PB_MEMBERS} thanh vien to phan bien`, life: 3000 })
+    return
+  }
   try {
     await store.lapToPhanBien(route.params.id, selectedPB.value)
     showPBDialog.value = false
@@ -116,7 +136,7 @@ function fmtM(n)  { return n?.toLocaleString('vi-VN') + ' đ' }
         <div class="detail-card">
           <h3 class="detail-card-title">Thông tin đề tài</h3>
           <dl class="info-list">
-            <dt>Giảng viên</dt> <dd>{{ chiTiet.giangVien?.hoTen }}</dd>
+            <dt>Giảng viên</dt> <dd>{{ chiTiet.giangVien?.hoTen ?? chiTiet.chuNhiem }}</dd>
             <dt>Kỳ NCKH</dt>  <dd>{{ chiTiet.kyNckh }}</dd>
             <dt>Lĩnh vực</dt> <dd>{{ chiTiet.linhVuc || '—' }}</dd>
             <dt>Kinh phí</dt> <dd>{{ chiTiet.kinhPhi ? fmtM(chiTiet.kinhPhi) : '—' }}</dd>
@@ -159,7 +179,7 @@ function fmtM(n)  { return n?.toLocaleString('vi-VN') + ' đ' }
           </div>
           <div class="dialog-footer">
             <button class="btn btn-secondary" @click="showYeuCauDialog = false">Hủy</button>
-            <button class="btn btn-warning" @click="submitYeuCau">Gửi yêu cầu</button>
+            <button class="btn btn-warning" :disabled="lyDoYeuCau.trim().length < MIN_YEU_CAU_LENGTH" @click="submitYeuCau">Gửi yêu cầu</button>
           </div>
         </div>
       </div>
@@ -174,7 +194,7 @@ function fmtM(n)  { return n?.toLocaleString('vi-VN') + ' đ' }
             <button class="dialog-close" @click="showPBDialog = false"><X :size="20" /></button>
           </div>
           <div class="dialog-body">
-            <p class="text-muted text-sm mb-3">Chọn ít nhất 1 thành viên tổ phản biện:</p>
+            <p class="text-muted text-sm mb-3">Chọn ít nhất 2 thành viên tổ phản biện:</p>
             <div class="pb-member-list">
               <label v-for="pb in pbMembers" :key="pb.id" class="pb-member-item">
                 <input type="checkbox" :value="pb.id" v-model="selectedPB" />
@@ -185,7 +205,7 @@ function fmtM(n)  { return n?.toLocaleString('vi-VN') + ' đ' }
           </div>
           <div class="dialog-footer">
             <button class="btn btn-secondary" @click="showPBDialog = false">Hủy</button>
-            <button class="btn btn-primary" :disabled="!selectedPB.length" @click="submitLapPB">Xác nhận</button>
+            <button class="btn btn-primary" :disabled="selectedPB.length < MIN_PB_MEMBERS" @click="submitLapPB">Xác nhận</button>
           </div>
         </div>
       </div>

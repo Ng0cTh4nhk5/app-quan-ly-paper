@@ -39,6 +39,43 @@ function getMockUser() {
   }
 }
 
+function isOwnerDeTai(deTai, user) {
+  return deTai?.giangVien?.id === user?.id || deTai?.chuNhiemId === user?.id
+}
+
+function forbidden(message = 'Ban khong co quyen thao tac voi de tai nay.') {
+  return Promise.reject({ response: { status: 403, data: { message } } })
+}
+
+function canGvMutate(deTai, user) {
+  return user?.role === 'GIANG_VIEN' && isOwnerDeTai(deTai, user)
+}
+
+function getCanActions(deTai, user) {
+  const status = deTai?.trangThai
+  const hasThuyetMinh = deTai?.taiLieu?.some(t => t.loai === 'THUYET_MINH') ?? false
+  const isGvOwner = user?.role === 'GIANG_VIEN' && isOwnerDeTai(deTai, user)
+  const isNckh = user?.role === 'NCKH'
+  const currentPb = user?.role === 'TO_PHAN_BIEN'
+    ? deTai?.toPhanBien?.find(pb => pb.id === user.id)
+    : null
+  const canSubmitPb = !!currentPb && !currentPb.ketQua
+
+  return {
+    guiHoSo: isGvOwner && ['DRAFT', 'CHO_CHINH_SUA_THUYET_MINH'].includes(status) && hasThuyetMinh,
+    uploadThuyetMinh: isGvOwner && ['DRAFT', 'CHO_CHINH_SUA_THUYET_MINH'].includes(status),
+    xoaTaiLieu: isGvOwner && status === 'DRAFT',
+    boSungHoSo: isGvOwner && status === 'CHO_BO_SUNG_HO_SO',
+    xemHopDong: isGvOwner && ['DANG_LAP_HOP_DONG', 'DANG_THUC_HIEN', 'HOAN_TAT'].includes(status),
+    tiepNhan: isNckh && status === 'CHO_PNCKH_XEM_XET',
+    yeuCauBoSung: isNckh && status === 'DANG_XEM_XET_BOI_PNCKH',
+    lapToPhanBien: isNckh && status === 'DANG_XEM_XET_BOI_PNCKH',
+    xetDuyetPB: isNckh && status === 'DANG_PHAN_BIEN',
+    kyHopDong: isNckh && status === 'DANG_LAP_HOP_DONG' && !!deTai?.gvDaDongYHopDong && !deTai?.hopDongFeedback,
+    nopKetQuaPB: canSubmitPb && status === 'DANG_PHAN_BIEN',
+  }
+}
+
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('rgms_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
@@ -68,11 +105,26 @@ if (BASE_URL === '__MOCK__') {
       mockData = list
     }
 
+    if (method === 'get' && url.match(/^\/de-tai\/\d+\/can-actions$/)) {
+      const id = url.split('/')[2]
+      const dt = getDeTaiById(id)
+      if (!dt) {
+        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      }
+      if (user?.role === 'GIANG_VIEN' && !isOwnerDeTai(dt, user)) {
+        return Promise.reject({ response: { status: 403, data: { message: 'Ban khong co quyen xem de tai nay.' } } })
+      }
+      mockData = getCanActions(dt, user)
+    }
+
     if (method === 'get' && url.match(/^\/de-tai\/\d+$/)) {
       const id = url.split('/').pop()
       mockData = getDeTaiById(id)
       if (!mockData) {
         return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      }
+      if (user?.role === 'GIANG_VIEN' && !isOwnerDeTai(mockData, user)) {
+        return Promise.reject({ response: { status: 403, data: { message: 'Ban khong co quyen xem de tai nay.' } } })
       }
     }
 
@@ -86,6 +138,7 @@ if (BASE_URL === '__MOCK__') {
       if (!dt) {
         return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
       }
+      if (!canGvMutate(dt, user)) return forbidden()
       const body = getPayload(config.data)
       const file = body.file
       mockData = addTaiLieu(id, {
@@ -102,6 +155,7 @@ if (BASE_URL === '__MOCK__') {
       if (!dt) {
         return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
       }
+      if (!canGvMutate(dt, user)) return forbidden()
       if (dt.trangThai !== 'DRAFT') {
         return Promise.reject({ response: { status: 422, data: { message: 'Chi duoc xoa tai lieu khi de tai dang o trang thai nhap.' } } })
       }
@@ -115,6 +169,10 @@ if (BASE_URL === '__MOCK__') {
     if (method === 'post' && url.match(/\/de-tai\/\d+\/gui-ho-so$/)) {
       const id = url.split('/')[2]
       const dt = getDeTaiById(id)
+      if (!dt) {
+        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      }
+      if (!canGvMutate(dt, user)) return forbidden()
       const hasThuyetMinh = dt?.taiLieu?.some(t => t.loai === 'THUYET_MINH')
       if (!hasThuyetMinh) {
         return Promise.reject({ response: { status: 422, data: { message: 'Can tai len ban thuyet minh truoc khi gui ho so.' } } })
@@ -129,6 +187,11 @@ if (BASE_URL === '__MOCK__') {
 
     if (method === 'post' && url.match(/\/de-tai\/\d+\/bo-sung$/)) {
       const id = url.split('/')[2]
+      const dt = getDeTaiById(id)
+      if (!dt) {
+        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      }
+      if (!canGvMutate(dt, user)) return forbidden()
       const body = getPayload(config.data)
       mockData = updateTrangThai(id, 'CHO_PNCKH_XEM_XET', user?.hoTen ?? 'GV', 'Nop bo sung ho so', {
         moTaBoSung: body.moTaBoSung,
@@ -139,9 +202,13 @@ if (BASE_URL === '__MOCK__') {
     if (method === 'post' && url.match(/\/de-tai\/\d+\/yeu-cau-bo-sung$/)) {
       const id = url.split('/')[2]
       const body = getPayload(config.data)
+      const noiDung = String(body.noiDung ?? body.lyDo ?? '').trim()
+      if (noiDung.length < 20) {
+        return Promise.reject({ response: { status: 422, data: { message: 'Noi dung yeu cau can it nhat 20 ky tu.' } } })
+      }
       mockData = updateTrangThai(id, 'CHO_BO_SUNG_HO_SO', user?.hoTen ?? 'NCKH', 'Yeu cau bo sung ho so', {
         yeuCauBoSung: {
-          noiDung: body.noiDung ?? body.lyDo ?? '',
+          noiDung,
           deadline: body.deadline,
         },
       })
@@ -150,6 +217,9 @@ if (BASE_URL === '__MOCK__') {
     if (method === 'post' && url.match(/\/de-tai\/\d+\/lap-to-phan-bien$/)) {
       const id = url.split('/')[2]
       const { thanhVienIds = [] } = getPayload(config.data)
+      if (thanhVienIds.length < 2) {
+        return Promise.reject({ response: { status: 422, data: { message: 'Can it nhat 2 thanh vien to phan bien.' } } })
+      }
       const members = PB_LIST.filter(u => thanhVienIds.includes(u.id))
         .map(u => ({ ...u, ketQua: null, nhanXet: null }))
       mockData = updateTrangThai(id, 'DANG_PHAN_BIEN', user?.hoTen ?? 'NCKH', 'Lap to phan bien', { toPhanBien: members })
@@ -158,11 +228,24 @@ if (BASE_URL === '__MOCK__') {
     if (method === 'post' && url.match(/\/de-tai\/\d+\/nop-ket-qua-pb$/)) {
       const id = url.split('/')[2]
       const body = getPayload(config.data)
+      if (String(body.nhanXet ?? '').trim().length < 20) {
+        return Promise.reject({ response: { status: 422, data: { message: 'Nhan xet can it nhat 20 ky tu.' } } })
+      }
       const dt = getDeTaiById(id)
       const pb = dt?.toPhanBien?.find(p => p.id === user?.id)
-      if (pb) {
-        pb.ketQua = body.ketQua ?? body.deXuat
-        pb.nhanXet = body.nhanXet
+      if (!pb) {
+        return Promise.reject({ response: { status: 403, data: { message: 'Ban khong duoc phan cong phan bien de tai nay.' } } })
+      }
+      if (pb.ketQua) {
+        return Promise.reject({ response: { status: 422, data: { message: 'Ban da nop ket qua phan bien cho de tai nay.' } } })
+      }
+      pb.ketQua = body.ketQua ?? body.deXuat
+      pb.nhanXet = body.nhanXet
+      pb.diemTong = body.diemTong
+      pb.diemChiTiet = {
+        khoaHoc: body.diemKhoaHoc,
+        congNghe: body.diemCongNghe,
+        khaDung: body.diemTinhKhaDung,
       }
       dt.updatedAt = new Date().toISOString()
       mockData = JSON.parse(JSON.stringify(dt))
@@ -195,6 +278,10 @@ if (BASE_URL === '__MOCK__') {
     if (method === 'post' && url.match(/\/de-tai\/\d+\/gv-dong-y-hop-dong$/)) {
       const id = url.split('/')[2]
       const dt = getDeTaiById(id)
+      if (!dt) {
+        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      }
+      if (!canGvMutate(dt, user)) return forbidden()
       if (dt?.hopDongFeedback) {
         return Promise.reject({ response: { status: 422, data: { message: 'Hop dong dang co phan hoi chinh sua, can P.NCKH soan lai truoc khi dong y.' } } })
       }
@@ -224,6 +311,11 @@ if (BASE_URL === '__MOCK__') {
 
     if (method === 'post' && url.match(/\/de-tai\/\d+\/hop-dong\/yeu-cau-chinh-sua$/)) {
       const id = url.split('/')[2]
+      const dt = getDeTaiById(id)
+      if (!dt) {
+        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      }
+      if (!canGvMutate(dt, user)) return forbidden()
       const body = getPayload(config.data)
       const noiDung = String(body.noiDung ?? '').trim()
       if (noiDung.length < 10) {

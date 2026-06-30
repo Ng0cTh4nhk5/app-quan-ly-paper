@@ -53,7 +53,7 @@ function fmt(iso) { return iso ? new Date(iso).toLocaleDateString('vi-VN') : 'â€
           <tr v-for="dt in filtered" :key="dt.id">
             <td class="mono text-sm">{{ dt.maSo }}</td>
             <td>{{ dt.tenDeTai }}</td>
-            <td class="text-muted">{{ dt.giangVien?.hoTen }}</td>
+            <td class="text-muted">{{ dt.giangVien?.hoTen ?? dt.chuNhiem }}</td>
             <td><StatusBadge :status="dt.trangThai" /></td>
             <td class="text-muted text-sm">{{ fmt(dt.updatedAt) }}</td>
             <td>

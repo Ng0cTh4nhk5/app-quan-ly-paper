@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { MOCK_USERS } from '@/mock/db.js'
+import api from '@/api/axios'
 
 /**
  * Mock JWT: base64(header).base64(payload).FAKESIG
@@ -16,6 +17,14 @@ function b64ToUtf8(b64) {
     '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''))
 }
 
+function normalizeJwtPayload(payload) {
+  return {
+    ...payload,
+    id: payload.id ?? (payload.sub ? Number(payload.sub) : undefined),
+    hoTen: payload.hoTen ?? payload.name ?? payload.username,
+  }
+}
+
 function makeMockJWT(user) {
   const header  = utf8ToB64(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
   const payload = utf8ToB64(JSON.stringify({ ...user, exp: Date.now() + 86400000 }))
@@ -24,18 +33,29 @@ function makeMockJWT(user) {
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('rgms_token') ?? null)
+  const isMockMode = computed(() => !import.meta.env.VITE_API_URL)
 
   const user = computed(() => {
     if (!token.value) return null
-    try { return JSON.parse(b64ToUtf8(token.value.split('.')[1])) }
+    try { return normalizeJwtPayload(JSON.parse(b64ToUtf8(token.value.split('.')[1]))) }
     catch { return null }
   })
 
   const isLoggedIn = computed(() => !!user.value)
   const role       = computed(() => user.value?.role ?? null)
 
+  async function login(credentials) {
+    const res = await api.post('/auth/login', credentials)
+    const nextToken = res.data?.token ?? res.data?.accessToken ?? res.data?.jwt
+    if (!nextToken) throw new Error('Dang nhap thanh cong nhung API khong tra ve token.')
+    token.value = nextToken
+    localStorage.setItem('rgms_token', token.value)
+    return user.value
+  }
+
   // Mock login — chọn role để test
   function loginAs(userKey) {
+    if (!isMockMode.value) throw new Error('loginAs chi dung cho mock mode.')
     const u = MOCK_USERS[userKey]
     if (!u) return
     token.value = makeMockJWT(u)
@@ -47,5 +67,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('rgms_token')
   }
 
-  return { token, user, isLoggedIn, role, loginAs, logout }
+  return { token, user, isLoggedIn, role, isMockMode, login, loginAs, logout }
 })
