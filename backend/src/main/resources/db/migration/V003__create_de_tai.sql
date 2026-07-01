@@ -17,7 +17,6 @@ CREATE TABLE de_tai (
     linh_vuc                VARCHAR(100),
     trang_thai              VARCHAR(50)  NOT NULL DEFAULT 'DRAFT',
     chu_nhiem_id            BIGINT       NOT NULL REFERENCES nguoi_dung(id),
-    don_vi_id               BIGINT       REFERENCES don_vi(id),
     ky_nckh_id              BIGINT       NOT NULL REFERENCES ky_nckh(id),
     gv_da_dong_y_hop_dong   BOOLEAN      NOT NULL DEFAULT FALSE,
     ngay_bat_dau            DATE,

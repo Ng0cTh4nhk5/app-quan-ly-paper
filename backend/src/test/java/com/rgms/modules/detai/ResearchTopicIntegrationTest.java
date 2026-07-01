@@ -2,8 +2,8 @@ package com.rgms.modules.detai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rgms.modules.detai.dto.TaoDeTaiRequest;
-import com.rgms.modules.detai.repository.DeTaiRepository;
-import com.rgms.modules.detai.repository.KyNckhRepository;
+import com.rgms.modules.detai.repo.DeTaiRepository;
+import com.rgms.modules.detai.repo.KyNCKHRepository;
 import com.rgms.modules.nguoidung.repository.NguoiDungRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ class ResearchTopicIntegrationTest {
     @Autowired ObjectMapper objectMapper;
     @Autowired DeTaiRepository deTaiRepository;
     @Autowired NguoiDungRepository nguoiDungRepository;
-    @Autowired KyNckhRepository kyNckhRepository;
+    @Autowired KyNCKHRepository kyNckhRepository;
 
     private static final String API_BASE = "/api/v1/de-tai";
 

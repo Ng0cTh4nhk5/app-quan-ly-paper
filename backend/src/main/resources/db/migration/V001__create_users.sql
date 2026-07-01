@@ -5,7 +5,12 @@ CREATE TABLE nguoi_dung (
     ho_ten        VARCHAR(255) NOT NULL,
     email         VARCHAR(255) NOT NULL UNIQUE,
     vai_tro       VARCHAR(50) NOT NULL,
+    loai_tai_khoan VARCHAR(20) NOT NULL DEFAULT 'CHINH_THUC',
+    hieu_luc_den   TIMESTAMP,
+    ma_giang_vien  VARCHAR(50),
+    trang_thai     VARCHAR(20) NOT NULL DEFAULT 'HOAT_DONG',
     created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMP NOT NULL DEFAULT NOW(),
 
     CONSTRAINT chk_nguoi_dung_vai_tro
         CHECK (vai_tro IN ('GIANG_VIEN', 'NCKH', 'TO_PHAN_BIEN', 'ADMIN'))

@@ -2,7 +2,7 @@ package com.rgms.modules.detai.guards;
 
 import com.rgms.exception.BusinessException;
 import com.rgms.modules.detai.fsm.guards.TatCaPBDaNopGuard;
-import com.rgms.modules.detai.repository.ToPhanBienRepository;
+import com.rgms.modules.detai.repo.ToPhanBienRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

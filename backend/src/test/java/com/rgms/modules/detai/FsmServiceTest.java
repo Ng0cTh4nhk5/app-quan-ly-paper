@@ -4,11 +4,10 @@ import com.rgms.exception.BusinessException;
 import com.rgms.modules.detai.entity.AuditLog;
 import com.rgms.modules.detai.entity.DeTai;
 import com.rgms.modules.detai.fsm.FsmService;
-import com.rgms.modules.detai.repository.AuditLogRepository;
-import com.rgms.modules.detai.repository.DeTaiRepository;
+import com.rgms.modules.detai.repo.AuditLogRepository;
+import com.rgms.modules.detai.repo.DeTaiRepository;
 import com.rgms.modules.nguoidung.entity.NguoiDung;
-import com.rgms.modules.nguoidung.model.Role;
-import com.rgms.modules.nguoidung.repository.NguoiDungRepository;
+import com.rgms.modules.detai.repo.DetaiNguoiDungRepository;
 import com.rgms.shared.enums.TopicEvent;
 import com.rgms.shared.enums.TopicState;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +46,7 @@ class FsmServiceTest {
 
     @Mock DeTaiRepository deTaiRepository;
     @Mock AuditLogRepository auditLogRepository;
-    @Mock NguoiDungRepository nguoiDungRepository;
+    @Mock DetaiNguoiDungRepository nguoiDungRepository;
 
     @InjectMocks FsmService fsmService;
 
