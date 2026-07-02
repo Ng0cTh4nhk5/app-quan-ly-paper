@@ -6,30 +6,30 @@ import { useAuthStore } from '@/stores/auth.store'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { Sparkles, Inbox, Settings, CheckCircle, List, TriangleAlert, CircleAlert, Star } from '@lucide/vue'
 
-const store  = useNckhStore()
-const auth   = useAuthStore()
+const store = useNckhStore()
+const auth = useAuthStore()
 const router = useRouter()
 
 onMounted(() => store.layDanhSach())
 
-const list      = computed(() => store.danhSach ?? [])
-const inbox     = computed(() => list.value.filter(d => d.trangThai === 'CHO_PNCKH_XEM_XET'))
+const list = computed(() => store.danhSach ?? [])
+const inbox = computed(() => list.value.filter(d => d.trangThai === 'CHO_PNCKH_XEM_XET'))
 const inProcess = computed(() => list.value.filter(d => ['DANG_PHAN_BIEN', 'DANG_LAP_HOP_DONG'].includes(d.trangThai)))
-const done      = computed(() => list.value.filter(d => d.trangThai === 'HOAN_TAT'))
-const urgent    = computed(() => inbox.value.slice(0, 5))
+const done = computed(() => list.value.filter(d => d.trangThai === 'HOAN_TAT'))
+const urgent = computed(() => inbox.value.slice(0, 5))
 
 const stats = [
-  { icon: Inbox, label: 'Chờ xem xét',    key: 'inbox',     iconClass: 'stat-icon-amber' },
-  { icon: Settings, label: 'Đang xử lý',     key: 'inProcess', iconClass: 'stat-icon-blue'  },
-  { icon: CheckCircle, label: 'Đã hoàn thành',  key: 'done',      iconClass: 'stat-icon-green' },
-  { icon: List, label: 'Tổng hồ sơ',     key: 'total',     iconClass: 'stat-icon-teal'  },
+  { icon: Inbox, label: 'Chờ xem xét', key: 'inbox', iconClass: 'stat-icon-amber' },
+  { icon: Settings, label: 'Đang xử lý', key: 'inProcess', iconClass: 'stat-icon-blue' },
+  { icon: CheckCircle, label: 'Đã hoàn thành', key: 'done', iconClass: 'stat-icon-green' },
+  { icon: List, label: 'Tổng hồ sơ', key: 'total', iconClass: 'stat-icon-teal' },
 ]
 
 const statValues = computed(() => ({
-  inbox:     inbox.value.length,
+  inbox: inbox.value.length,
   inProcess: inProcess.value.length,
-  done:      done.value.length,
-  total:     list.value.length,
+  done: done.value.length,
+  total: list.value.length,
 }))
 
 function fmt(iso) {
@@ -47,10 +47,12 @@ const greeting = computed(() => {
 
 <template>
   <div>
-    <!-- Greeting -->
     <div class="greeting-row">
       <div>
-        <h1 class="greeting-title">{{ greeting }}, {{ auth.user?.hoTen?.split(' ').pop() }} <Sparkles style="color: var(--color-amber);" :size="24" /></h1>
+        <h1 class="greeting-title">
+          {{ greeting }}, {{ auth.user?.hoTen?.split(' ').pop() }}
+          <Sparkles style="color: var(--color-amber);" :size="24" />
+        </h1>
         <p class="greeting-sub">Tổng quan hồ sơ đề tài đang chờ xử lý tại Phòng NCKH.</p>
       </div>
       <button class="btn btn-primary" @click="router.push('/nckh/inbox')">
@@ -58,7 +60,6 @@ const greeting = computed(() => {
       </button>
     </div>
 
-    <!-- Warning if inbox has items -->
     <div v-if="inbox.length > 0" class="warning-banner">
       <span><TriangleAlert :size="24" /></span>
       <div>
@@ -67,7 +68,6 @@ const greeting = computed(() => {
       </div>
     </div>
 
-    <!-- Stats -->
     <div class="stats-grid">
       <div v-for="s in stats" :key="s.label" class="stat-card">
         <div class="stat-icon" :class="s.iconClass"><component :is="s.icon" :size="24" /></div>
@@ -78,9 +78,7 @@ const greeting = computed(() => {
       </div>
     </div>
 
-    <!-- Main content -->
     <div class="dash-grid">
-      <!-- Priority Queue -->
       <div class="card">
         <div class="card-header">
           <h3 class="card-title"><CircleAlert style="color: var(--color-danger)" :size="20" /> Ưu tiên xử lý</h3>
@@ -98,7 +96,8 @@ const greeting = computed(() => {
 
         <div v-else class="recent-list">
           <div
-            v-for="dt in urgent" :key="dt.id"
+            v-for="dt in urgent"
+            :key="dt.id"
             class="recent-item"
             @click="router.push(`/nckh/de-tai/${dt.id}`)"
           >
@@ -115,20 +114,20 @@ const greeting = computed(() => {
         </div>
       </div>
 
-      <!-- Side panel -->
       <div class="side-col">
-        <!-- In process -->
         <div class="card mb-4">
           <div class="card-header">
             <h3 class="card-title">Đang xử lý</h3>
             <button class="btn btn-ghost btn-sm" @click="router.push('/nckh/dang-xu-ly')">Chi tiết →</button>
           </div>
           <div v-if="inProcess.length === 0" class="card-body empty-msg">
-            <span><Inbox :size="32" style="color: var(--color-text-muted)" /></span><p>Không có hồ sơ nào đang xử lý.</p>
+            <span><Inbox :size="32" style="color: var(--color-text-muted)" /></span>
+            <p>Không có hồ sơ nào đang xử lý.</p>
           </div>
           <div v-else class="recent-list">
             <div
-              v-for="dt in inProcess.slice(0,4)" :key="dt.id"
+              v-for="dt in inProcess.slice(0, 4)"
+              :key="dt.id"
               class="recent-item"
               @click="router.push(`/nckh/de-tai/${dt.id}`)"
             >
@@ -140,7 +139,6 @@ const greeting = computed(() => {
           </div>
         </div>
 
-        <!-- Quick actions -->
         <div class="card">
           <div class="card-header"><h3 class="card-title">Thao tác nhanh</h3></div>
           <div class="quick-actions">

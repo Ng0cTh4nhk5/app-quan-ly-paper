@@ -15,7 +15,6 @@ const CONFIG = {
   DANG_LAP_HOP_DONG: { label: 'Đang lập HĐ', cls: 'badge-info', dot: '#06B6D4' },
   DANG_THUC_HIEN: { label: 'Đang thực hiện', cls: 'badge-success', dot: '#10B981' },
   CHO_NGHIEM_THU: { label: 'Chờ nghiệm thu', cls: 'badge-info', dot: '#6366F1' },
-  DANG_NGHIEM_THU: { label: 'Đang nghiệm thu', cls: 'badge-info', dot: '#7C3AED' },
   CHO_QUYET_TOAN: { label: 'Chờ quyết toán', cls: 'badge-warning', dot: '#F59E0B' },
   HOAN_TAT: { label: 'Hoàn tất', cls: 'badge-success', dot: '#047857' },
   BI_TREO: { label: 'Bị treo', cls: 'badge-danger', dot: '#EF4444' },
