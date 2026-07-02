@@ -1,5 +1,7 @@
 package com.rgms.shared.enums;
 
+import java.util.EnumSet;
+
 /**
  * Trạng thái vòng đời đề tài NCKH dùng trong FSM (Phase 1 — Luồng 1).
  * Khớp 100% với state-machine.md và sop-member-a.md.
@@ -33,13 +35,19 @@ public enum TopicState {
     DA_HUY;
 
     /**
+     * EnumSet chứa tất cả terminal states — lookup O(1) thay vì O(n) với chuỗi ||.
+     * Dùng EnumSet thay vì Set.of() vì EnumSet tối ưu hóa nội bộ bằng bit vector.
+     */
+    private static final EnumSet<TopicState> TERMINAL_STATES =
+            EnumSet.of(BI_TREO, BI_TU_CHOI, DA_RUT, DA_HUY);
+
+    /**
      * Terminal state = không có outgoing transition nào.
      * FsmService dùng để kiểm tra trước khi cho phép bất kỳ transition nào.
+     *
+     * @return true nếu state là terminal (BI_TREO, BI_TU_CHOI, DA_RUT, DA_HUY)
      */
     public boolean isTerminal() {
-        return this == BI_TREO
-                || this == BI_TU_CHOI
-                || this == DA_RUT
-                || this == DA_HUY;
+        return TERMINAL_STATES.contains(this);
     }
 }

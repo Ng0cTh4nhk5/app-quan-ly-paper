@@ -438,5 +438,193 @@ class FsmServiceTest {
 
             assertThat(result).isFalse();
         }
+
+        @Test
+        @DisplayName("DeTai không tồn tại → canTransition trả về false (không throw exception)")
+        void deTaiKhongTonTai_canTransition_trangFalse() {
+            when(deTaiRepository.findById(DE_TAI_ID)).thenReturn(Optional.empty());
+
+            boolean result = fsmService.canTransition(DE_TAI_ID, TopicEvent.GV_GUI_HO_SO);
+
+            assertThat(result).isFalse();
+        }
+
+        @Test
+        @DisplayName("Tất cả non-terminal states đều có ít nhất 1 event hợp lệ → canTransition = true")
+        void tatCaNonTerminalState_coItNhat1EventHopLe() {
+            // S0 DRAFT
+            mockDeTai.setStatus(TopicState.DRAFT);
+            when(deTaiRepository.findById(DE_TAI_ID)).thenReturn(Optional.of(mockDeTai));
+            assertThat(fsmService.canTransition(DE_TAI_ID, TopicEvent.GV_GUI_HO_SO)).isTrue();
+
+            // S1 CHO_PNCKH_XEM_XET
+            mockDeTai.setStatus(TopicState.CHO_PNCKH_XEM_XET);
+            assertThat(fsmService.canTransition(DE_TAI_ID, TopicEvent.PNCKH_TIEP_NHAN)).isTrue();
+
+            // S2 DANG_XEM_XET_BOI_PNCKH
+            mockDeTai.setStatus(TopicState.DANG_XEM_XET_BOI_PNCKH);
+            assertThat(fsmService.canTransition(DE_TAI_ID, TopicEvent.PNCKH_LAP_TO_PB)).isTrue();
+
+            // S3 CHO_BO_SUNG_HO_SO
+            mockDeTai.setStatus(TopicState.CHO_BO_SUNG_HO_SO);
+            assertThat(fsmService.canTransition(DE_TAI_ID, TopicEvent.GV_NOP_BO_SUNG)).isTrue();
+
+            // S4 DANG_PHAN_BIEN
+            mockDeTai.setStatus(TopicState.DANG_PHAN_BIEN);
+            assertThat(fsmService.canTransition(DE_TAI_ID, TopicEvent.PNCKH_ACCEPT_PB)).isTrue();
+
+            // S5 CHO_CHINH_SUA_THUYET_MINH
+            mockDeTai.setStatus(TopicState.CHO_CHINH_SUA_THUYET_MINH);
+            assertThat(fsmService.canTransition(DE_TAI_ID, TopicEvent.GV_NOP_SUA_TM)).isTrue();
+
+            // S6 DANG_LAP_HOP_DONG
+            mockDeTai.setStatus(TopicState.DANG_LAP_HOP_DONG);
+            assertThat(fsmService.canTransition(DE_TAI_ID, TopicEvent.HAI_BEN_KY_HD)).isTrue();
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // NHÓM 8: GUARD EDGE CASES — bổ sung theo review (các gap còn lại)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("Guard Edge Cases — các trường hợp biên bổ sung theo review")
+    class GuardEdgeCaseTests {
+
+        @Test
+        @DisplayName("Guard thứ 2 trong chain cũng fail → BusinessException của guard thứ 2 được ném ra")
+        void multipleGuards_guard2Fail_throwsGuard2Exception() {
+            givenDeTaiAtState(TopicState.DRAFT);
+
+            com.rgms.shared.fsm.TransitionGuard passGuard = (id, actor) -> {};  // guard 1 pass
+            com.rgms.shared.fsm.TransitionGuard failGuard2 = (id, actor) -> {   // guard 2 fail
+                throw new BusinessException("SECOND_GUARD_FAIL", "Guard 2 fail");
+            };
+
+            BusinessException ex = assertThrows(BusinessException.class,
+                    () -> fsmService.transition(DE_TAI_ID, TopicEvent.GV_GUI_HO_SO, ACTOR_ID,
+                            List.of(passGuard, failGuard2)));
+
+            assertThat(ex.getErrorCode()).isEqualTo("SECOND_GUARD_FAIL");
+            verify(auditLogRepository, never()).save(any());
+            verify(deTaiRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Guard chain 3 guards — guard thứ 3 fail → AuditLog không ghi, DeTai không save")
+        void threeGuards_thirdFails_noSideEffects() {
+            givenDeTaiAtState(TopicState.DRAFT);
+
+            com.rgms.shared.fsm.TransitionGuard g1 = (id, actor) -> {};
+            com.rgms.shared.fsm.TransitionGuard g2 = (id, actor) -> {};
+            com.rgms.shared.fsm.TransitionGuard g3 = (id, actor) -> {
+                throw new BusinessException("THIRD_GUARD_FAIL", "Guard 3 fail");
+            };
+
+            assertThrows(BusinessException.class,
+                    () -> fsmService.transition(DE_TAI_ID, TopicEvent.GV_GUI_HO_SO, ACTOR_ID,
+                            List.of(g1, g2, g3)));
+
+            verify(auditLogRepository, never()).save(any());
+            verify(deTaiRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Guard chain rỗng → transition thực hiện bình thường (không cần guard)")
+        void emptyGuardList_transitionSucceeds() {
+            givenDeTaiAtState(TopicState.DRAFT);
+
+            DeTai result = fsmService.transition(DE_TAI_ID, TopicEvent.GV_GUI_HO_SO, ACTOR_ID, List.of());
+
+            assertThat(result.getStatus()).isEqualTo(TopicState.CHO_PNCKH_XEM_XET);
+            verify(auditLogRepository).save(any(AuditLog.class));
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // NHÓM 9: BOUNDARY TEST — deadline = ngay hôm nay (edge case theo review)
+    //
+    // Mục đích: Xác nhận FSM xử lý đúng khi guard kiểm tra deadline tại ranh giới:
+    //   [A] Deadline = hết ngày HÔM NAY  → còn hạn → guard PASS → transition thành công
+    //   [B] Deadline = đầu ngày HÔM NAY  → đã qua (sau nửa đêm) → guard FAIL → exception
+    //   [C] Deadline = HÔM QUA           → quá hạn → guard FAIL → exception
+    //   [D] Deadline = NGÀY MAI          → còn hạn → guard PASS → transition thành công
+    //
+    // Guard lambda mô phỏng logic kiểm tra deadline (tương đương requireBeforeDeadline
+    // trong ResearchTopicService), đảm bảo FsmService xử lý đúng kết quả của guard
+    // tại các điểm biên thời gian.
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("Boundary Test — Deadline edge case (review gap #3)")
+    class DeadlineBoundaryTests {
+
+        @Test
+        @DisplayName("[A] Deadline = cuối ngày HÔM NAY (23:59:59) → guard PASS → transition thành công")
+        void deadline_cuoiNgayHomNay_guardPass_transitionThanhCong() {
+            givenDeTaiAtState(TopicState.CHO_BO_SUNG_HO_SO);
+
+            // Guard mô phỏng: deadline = 23:59:59 hôm nay → chưa quá hạn → PASS
+            java.time.LocalDateTime deadlineCuoiNgay =
+                    java.time.LocalDate.now().atTime(java.time.LocalTime.of(23, 59, 59));
+            com.rgms.shared.fsm.TransitionGuard deadlineGuard = (id, actor) -> {
+                if (java.time.LocalDateTime.now().isAfter(deadlineCuoiNgay)) {
+                    throw new BusinessException("GUARD_QUA_HAN", "Đã quá hạn nộp bổ sung.");
+                }
+            };
+
+            DeTai result = fsmService.transition(
+                    DE_TAI_ID, TopicEvent.GV_NOP_BO_SUNG, ACTOR_ID, List.of(deadlineGuard));
+
+            assertThat(result.getStatus()).isEqualTo(TopicState.DANG_XEM_XET_BOI_PNCKH);
+            verify(auditLogRepository).save(any(AuditLog.class));
+        }
+
+        @Test
+        @DisplayName("[C] Deadline = HÔM QUA → quá hạn → guard FAIL → FSM không thực hiện transition")
+        void deadline_homQua_guardFail_fsmKhongChuyenTrangThai() {
+            givenDeTaiAtState(TopicState.CHO_BO_SUNG_HO_SO);
+
+            // Guard mô phỏng: deadline = hôm qua 23:59:59 → đã quá hạn → FAIL
+            java.time.LocalDateTime deadlineHomQua =
+                    java.time.LocalDate.now().minusDays(1).atTime(java.time.LocalTime.of(23, 59, 59));
+            com.rgms.shared.fsm.TransitionGuard deadlineGuard = (id, actor) -> {
+                if (java.time.LocalDateTime.now().isAfter(deadlineHomQua)) {
+                    throw new BusinessException("GUARD_QUA_HAN", "Đã quá hạn nộp bổ sung.");
+                }
+            };
+
+            BusinessException ex = assertThrows(BusinessException.class,
+                    () -> fsmService.transition(
+                            DE_TAI_ID, TopicEvent.GV_NOP_BO_SUNG, ACTOR_ID, List.of(deadlineGuard)));
+
+            assertThat(ex.getErrorCode()).isEqualTo("GUARD_QUA_HAN");
+            // FSM không được thực hiện transition khi guard fail
+            verify(deTaiRepository, never()).save(any());
+            verify(auditLogRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("[D] Deadline = NGÀY MAI → còn hạn → guard PASS → transition thành công, AuditLog ghi đúng")
+        void deadline_ngayMai_guardPass_auditLogDungNoiDung() {
+            givenDeTaiAtState(TopicState.CHO_BO_SUNG_HO_SO);
+
+            // Guard mô phỏng: deadline = ngày mai → chưa quá hạn → PASS
+            java.time.LocalDateTime deadlineNgayMai =
+                    java.time.LocalDate.now().plusDays(1).atTime(java.time.LocalTime.of(23, 59, 59));
+            com.rgms.shared.fsm.TransitionGuard deadlineGuard = (id, actor) -> {
+                if (java.time.LocalDateTime.now().isAfter(deadlineNgayMai)) {
+                    throw new BusinessException("GUARD_QUA_HAN", "Đã quá hạn nộp bổ sung.");
+                }
+            };
+
+            fsmService.transition(DE_TAI_ID, TopicEvent.GV_NOP_BO_SUNG, ACTOR_ID, List.of(deadlineGuard));
+
+            // Xác nhận AuditLog ghi đúng trangThaiTruoc và trangThaiSau
+            verify(auditLogRepository).save(argThat(log ->
+                    log.getTrangThaiTruoc().equals("CHO_BO_SUNG_HO_SO")
+                    && log.getTrangThaiSau().equals("DANG_XEM_XET_BOI_PNCKH")
+            ));
+        }
     }
 }

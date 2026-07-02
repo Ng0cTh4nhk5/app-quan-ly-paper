@@ -16,11 +16,18 @@ import org.springframework.stereotype.Component;
  *   [1] Đề tài phải ở trạng thái DRAFT.
  *   [2] Người gửi phải là chủ nhiệm đề tài (IDOR protection — F-GV-04 GUARD-1).
  *   [3] Phải có ít nhất 1 file thuyết minh (loaiFile = THUYET_MINH).
- *   [4] Phải có ít nhất 1 người phản biện đề xuất.
+ *   [4] Phải có ít nhất MIN_PB_DE_XUAT người phản biện đề xuất.
  */
 @Component
 @RequiredArgsConstructor
 public class HoSoHopLeGuard implements TransitionGuard {
+
+    /**
+     * Số lượng người phản biện đề xuất tối thiểu (BR nghiệp vụ).
+     * Nên externalize thành @Value("${rgms.fsm.min-phan-bien-de-xuat:1}") khi cần cấu hình
+     * linh hoạt qua application.properties.
+     */
+    private static final int MIN_PB_DE_XUAT = 1;
 
     private final DeTaiRepository deTaiRepository;
     private final TaiLieuRepository taiLieuRepository;
@@ -54,11 +61,11 @@ public class HoSoHopLeGuard implements TransitionGuard {
                     "Hồ sơ chưa có file thuyết minh. Vui lòng upload thuyết minh trước khi gửi.");
         }
 
-        // [4] Phải có ít nhất 1 người phản biện đề xuất
+        // [4] Phải có ít nhất MIN_PB_DE_XUAT người phản biện đề xuất
         long soPhanBienDeXuat = phanBienDeXuatRepository.countByDeTaiId(deTaiId);
-        if (soPhanBienDeXuat < 1) {
+        if (soPhanBienDeXuat < MIN_PB_DE_XUAT) {
             throw new BusinessException("GUARD_THIEU_PHAN_BIEN",
-                    "Cần ít nhất 1 người phản biện đề xuất. Hiện chưa có ai.");
+                    "Cần ít nhất " + MIN_PB_DE_XUAT + " người phản biện đề xuất. Hiện chưa có ai.");
         }
     }
 }
