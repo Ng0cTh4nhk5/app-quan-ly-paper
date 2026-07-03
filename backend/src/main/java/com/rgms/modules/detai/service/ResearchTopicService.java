@@ -12,7 +12,7 @@ import com.rgms.modules.files.mapper.TaiLieuMapper;
 import com.rgms.modules.files.repo.TaiLieuRepository;
 import com.rgms.modules.files.service.FileUploadService;
 import com.rgms.modules.nguoidung.entity.NguoiDung;
-import com.rgms.modules.detai.repo.NguoiDungRepository;
+import com.rgms.modules.detai.repo.DetaiNguoiDungRepository;
 import com.rgms.shared.enums.TopicEvent;
 import com.rgms.shared.enums.TopicState;
 import com.rgms.shared.security.CustomUserDetails;
@@ -48,6 +48,7 @@ public class ResearchTopicService {
     private static final String FB_HD    = "HOP_DONG";
     private static final String FB_CHO_XL = "CHO_XU_LY";
     private static final String FB_DA_XL  = "DA_XU_LY";
+    private static final String KQ_CHUA_CO  = "CHUA_CO";
     private static final String KQ_CHUA_NOP = "CHUA_NOP";
     private static final String KQ_CHAP  = "CHAP_NHAN";
     private static final String KQ_CAN_SUA = "CAN_SUA";
@@ -61,7 +62,7 @@ public class ResearchTopicService {
     private final FsmService                    fsmService;
     private final DeTaiRepository               deTaiRepository;
     private final KyNCKHRepository              kyNckhRepository;
-    private final NguoiDungRepository           nguoiDungRepository;
+    private final DetaiNguoiDungRepository      nguoiDungRepository;
     private final TaiLieuRepository             taiLieuRepository;
     private final AuditLogRepository            auditLogRepository;
     private final PhanBienDeXuatRepository      phanBienDeXuatRepository;
@@ -95,12 +96,21 @@ public class ResearchTopicService {
     // 2. DANH SÁCH
     @Transactional(readOnly = true)
     public PageDeTaiResponse danhSach(String trangThai, Pageable pg, CustomUserDetails cur) {
-        String st = StringUtils.hasText(trangThai) ? trangThai.trim() : null;
+        TopicState statusFilter = null;
+        if (StringUtils.hasText(trangThai)) {
+            try {
+                statusFilter = TopicState.valueOf(trangThai.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException("Trạng thái không hợp lệ: " + trangThai, HttpStatus.BAD_REQUEST);
+            }
+        }
         Page<DeTai> page = ROLE_GV.equals(cur.getRole())
-                ? (st == null ? deTaiRepository.findByChuNhiem_Id(cur.getId(), pg)
-                              : deTaiRepository.findByChuNhiem_IdAndTrangThai(cur.getId(), st, pg))
-                : (st == null ? deTaiRepository.findAll(pg)
-                              : deTaiRepository.findByTrangThai(st, pg));
+                ? (statusFilter == null
+                        ? deTaiRepository.findByChuNhiem_Id(cur.getId(), pg)
+                        : deTaiRepository.findByChuNhiem_IdAndStatus(cur.getId(), statusFilter, pg))
+                : (statusFilter == null
+                        ? deTaiRepository.findAll(pg)
+                        : deTaiRepository.findByStatus(statusFilter, pg));
         return PageDeTaiResponse.builder()
                 .content(page.getContent().stream().map(deTaiMapper::toResponse).toList())
                 .totalElements(page.getTotalElements()).totalPages(page.getTotalPages())
@@ -214,7 +224,7 @@ public class ResearchTopicService {
         ToPhanBien tpb = new ToPhanBien();
         tpb.setDeTai(dt);
         tpb.setDeadlineNop(req.getDeadlineNop());
-        tpb.setKetQuaTongHop(KQ_CHUA_NOP);
+        tpb.setKetQuaTongHop(KQ_CHUA_CO);
         ToPhanBien savedTpb = toPhanBienRepository.save(tpb);
 
         members.forEach(m -> {

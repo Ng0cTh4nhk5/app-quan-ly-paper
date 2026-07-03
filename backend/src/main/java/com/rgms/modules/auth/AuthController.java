@@ -2,7 +2,7 @@ package com.rgms.modules.auth;
 
 import com.rgms.exception.BusinessException;
 import com.rgms.modules.nguoidung.entity.NguoiDung;
-import com.rgms.modules.detai.repo.NguoiDungRepository;
+import com.rgms.modules.detai.repo.DetaiNguoiDungRepository;
 import com.rgms.shared.security.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -28,7 +28,7 @@ import java.util.Map;
 public class AuthController {
 
     private final JwtUtil jwtUtil;
-    private final NguoiDungRepository nguoiDungRepository;
+    private final DetaiNguoiDungRepository nguoiDungRepository;
 
     @PostMapping("/login")
     @Operation(

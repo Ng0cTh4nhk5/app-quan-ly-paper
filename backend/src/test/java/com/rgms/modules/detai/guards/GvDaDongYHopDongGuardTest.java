@@ -3,7 +3,7 @@ package com.rgms.modules.detai.guards;
 import com.rgms.exception.BusinessException;
 import com.rgms.modules.detai.entity.DeTai;
 import com.rgms.modules.detai.fsm.guards.GvDaDongYHopDongGuard;
-import com.rgms.modules.detai.repository.DeTaiRepository;
+import com.rgms.modules.detai.repo.DeTaiRepository;
 import com.rgms.shared.enums.TopicState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

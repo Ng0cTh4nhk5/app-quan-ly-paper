@@ -25,7 +25,7 @@ public class TatCaPBDaNopGuard implements TransitionGuard {
 
     @Override
     public void check(Long deTaiId, Long actorId) {
-        long tongSo   = toPhanBienRepository.countByDeTaiId(deTaiId);
+        long tongSo   = toPhanBienRepository.countThanhVienByDeTaiId(deTaiId);
         long soChuaNop = toPhanBienRepository.countPhanBienChuaNopByDeTaiId(deTaiId);
 
         // Edge case: tổ phản biện rỗng → không được phép xét duyệt

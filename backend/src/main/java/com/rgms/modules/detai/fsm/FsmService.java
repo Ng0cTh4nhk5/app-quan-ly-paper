@@ -5,7 +5,7 @@ import com.rgms.modules.detai.entity.AuditLog;
 import com.rgms.modules.detai.entity.DeTai;
 import com.rgms.modules.detai.repo.AuditLogRepository;
 import com.rgms.modules.detai.repo.DeTaiRepository;
-import com.rgms.modules.detai.repo.NguoiDungRepository;
+import com.rgms.modules.detai.repo.DetaiNguoiDungRepository;
 import com.rgms.modules.nguoidung.entity.NguoiDung;
 import com.rgms.shared.enums.TopicEvent;
 import com.rgms.shared.enums.TopicState;
@@ -41,7 +41,7 @@ public class FsmService {
 
     private final DeTaiRepository deTaiRepository;
     private final AuditLogRepository auditLogRepository;
-    private final NguoiDungRepository nguoiDungRepository;
+    private final DetaiNguoiDungRepository nguoiDungRepository;
 
     // ── Public API ────────────────────────────────────────────────────────────
 

@@ -1,11 +1,13 @@
 CREATE TABLE don_vi (
-    id         BIGSERIAL PRIMARY KEY,
-    ten_don_vi VARCHAR(255) NOT NULL,
-    ma_don_vi  VARCHAR(50) NOT NULL UNIQUE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    id                 BIGSERIAL PRIMARY KEY,
+    ten                VARCHAR(255) NOT NULL,
+    ma_don_vi          VARCHAR(50) NOT NULL UNIQUE,
+    truong_don_vi_id   BIGINT REFERENCES nguoi_dung(id),
+    created_at         TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at         TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-INSERT INTO don_vi (id, ten_don_vi, ma_don_vi) VALUES
+INSERT INTO don_vi (id, ten, ma_don_vi) VALUES
     (1, 'Khoa Công nghệ thông tin', 'CNTT'),
     (2, 'Phòng Nghiên cứu khoa học', 'PNCKH'),
     (3, 'Tổ phản biện', 'TPB'),
@@ -49,7 +51,7 @@ WHERE dt.chu_nhiem_id = nd.id;
 ALTER TABLE de_tai ALTER COLUMN don_vi_id SET NOT NULL;
 CREATE INDEX idx_de_tai_don_vi ON de_tai(don_vi_id);
 
-CREATE SEQUENCE de_tai_ma_so_seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE IF NOT EXISTS de_tai_ma_so_seq START WITH 1 INCREMENT BY 1;
 SELECT setval(
     'de_tai_ma_so_seq',
     COALESCE((
