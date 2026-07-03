@@ -10,6 +10,21 @@ import {
   PB_LIST,
   KY_NCKH_LIST,
 } from '@/mock/db.js'
+import {
+  CONTRACT_DRAFTABLE_STATUSES,
+  CONTRACT_REVIEWABLE_STATUSES,
+  canActionsFor,
+  hasOpenContractFeedback,
+  normalizeContractStatus,
+  normalizeReviewDecision,
+  validateKyHopDong,
+  validateLapToPhanBien,
+  validatePbKetQua,
+  validateSoanHopDong,
+  validateTuChoiHoSo,
+  validateXetDuyetPB,
+  validateYeuCauBoSung,
+} from '@/mock/sopDGuards.js'
 
 const BASE_URL = import.meta.env.VITE_API_URL || '__MOCK__'
 
@@ -27,6 +42,19 @@ function getPayload(data, fallback = {}) {
   return data
 }
 
+function asPercentRate(value) {
+  const numeric = Number(value ?? 0)
+  return numeric <= 1 ? numeric * 100 : numeric
+}
+
+function clone(data) {
+  return JSON.parse(JSON.stringify(data))
+}
+
+function mockReject(status, message) {
+  return Promise.reject({ response: { status, data: { message } } })
+}
+
 function getMockUser() {
   const token = localStorage.getItem('rgms_token')
   if (!token) return null
@@ -39,41 +67,24 @@ function getMockUser() {
   }
 }
 
-function isOwnerDeTai(deTai, user) {
-  return deTai?.giangVien?.id === user?.id || deTai?.chuNhiemId === user?.id
+function actor(user, fallback) {
+  return user?.hoTen ?? fallback
 }
 
-function forbidden(message = 'Ban khong co quyen thao tac voi de tai nay.') {
-  return Promise.reject({ response: { status: 403, data: { message } } })
+function requireState(dt, state, message) {
+  if (dt?.trangThai !== state) throw new Error(message)
 }
 
-function canGvMutate(deTai, user) {
-  return user?.role === 'GIANG_VIEN' && isOwnerDeTai(deTai, user)
+function canReadTopic(dt, user) {
+  if (!dt || !user) return false
+  if (user.role === 'NCKH') return true
+  if (user.role === 'GIANG_VIEN') return dt.chuNhiemId === user.id || dt.giangVien?.id === user.id
+  if (user.role === 'TO_PHAN_BIEN') return dt.toPhanBien?.some(member => member.id === user.id)
+  return false
 }
 
-function getCanActions(deTai, user) {
-  const status = deTai?.trangThai
-  const hasThuyetMinh = deTai?.taiLieu?.some(t => t.loai === 'THUYET_MINH') ?? false
-  const isGvOwner = user?.role === 'GIANG_VIEN' && isOwnerDeTai(deTai, user)
-  const isNckh = user?.role === 'NCKH'
-  const currentPb = user?.role === 'TO_PHAN_BIEN'
-    ? deTai?.toPhanBien?.find(pb => pb.id === user.id)
-    : null
-  const canSubmitPb = !!currentPb && !currentPb.ketQua
-
-  return {
-    guiHoSo: isGvOwner && ['DRAFT', 'CHO_CHINH_SUA_THUYET_MINH'].includes(status) && hasThuyetMinh,
-    uploadThuyetMinh: isGvOwner && ['DRAFT', 'CHO_CHINH_SUA_THUYET_MINH'].includes(status),
-    xoaTaiLieu: isGvOwner && status === 'DRAFT',
-    boSungHoSo: isGvOwner && status === 'CHO_BO_SUNG_HO_SO',
-    xemHopDong: isGvOwner && ['DANG_LAP_HOP_DONG', 'DANG_THUC_HIEN', 'HOAN_TAT'].includes(status),
-    tiepNhan: isNckh && status === 'CHO_PNCKH_XEM_XET',
-    yeuCauBoSung: isNckh && status === 'DANG_XEM_XET_BOI_PNCKH',
-    lapToPhanBien: isNckh && status === 'DANG_XEM_XET_BOI_PNCKH',
-    xetDuyetPB: isNckh && status === 'DANG_PHAN_BIEN',
-    kyHopDong: isNckh && status === 'DANG_LAP_HOP_DONG' && !!deTai?.gvDaDongYHopDong && !deTai?.hopDongFeedback,
-    nopKetQuaPB: canSubmitPb && status === 'DANG_PHAN_BIEN',
-  }
+function canMutateGvTopic(dt, user) {
+  return user?.role === 'GIANG_VIEN' && (dt?.chuNhiemId === user.id || dt?.giangVien?.id === user.id)
 }
 
 api.interceptors.request.use(config => {
@@ -98,248 +109,270 @@ if (BASE_URL === '__MOCK__') {
     const method = config.method
     let mockData = null
 
-    if (method === 'get' && url === '/de-tai') {
-      const trangThai = config.params?.trangThai
-      let list = user ? getDeTaiByRole(user.role, user.id) : getDB()
-      if (trangThai) list = list.filter(d => d.trangThai === trangThai)
-      mockData = list
-    }
+    try {
+      if (method === 'get' && url === '/de-tai') {
+        const trangThai = config.params?.trangThai
+        let list = user ? getDeTaiByRole(user.role, user.id) : getDB()
+        if (trangThai) list = list.filter(d => d.trangThai === trangThai)
+        mockData = clone(list)
+      }
 
-    if (method === 'get' && url.match(/^\/de-tai\/\d+\/can-actions$/)) {
-      const id = url.split('/')[2]
-      const dt = getDeTaiById(id)
-      if (!dt) {
-        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      if (method === 'get' && url.match(/^\/de-tai\/\d+$/)) {
+        const id = url.split('/').pop()
+        const dt = getDeTaiById(id)
+        if (!dt) return mockReject(404, 'Không tìm thấy đề tài.')
+        if (!canReadTopic(dt, user)) return mockReject(403, 'Bạn không có quyền xem đề tài này.')
+        mockData = clone(dt)
       }
-      if (user?.role === 'GIANG_VIEN' && !isOwnerDeTai(dt, user)) {
-        return Promise.reject({ response: { status: 403, data: { message: 'Ban khong co quyen xem de tai nay.' } } })
-      }
-      mockData = getCanActions(dt, user)
-    }
 
-    if (method === 'get' && url.match(/^\/de-tai\/\d+$/)) {
-      const id = url.split('/').pop()
-      mockData = getDeTaiById(id)
-      if (!mockData) {
-        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      if (method === 'get' && url.match(/^\/de-tai\/\d+\/can-actions$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        if (!dt) return mockReject(404, 'Không tìm thấy đề tài.')
+        if (!canReadTopic(dt, user)) return mockReject(403, 'Bạn không có quyền xem đề tài này.')
+        mockData = canActionsFor(dt, user)
       }
-      if (user?.role === 'GIANG_VIEN' && !isOwnerDeTai(mockData, user)) {
-        return Promise.reject({ response: { status: 403, data: { message: 'Ban khong co quyen xem de tai nay.' } } })
-      }
-    }
 
-    if (method === 'post' && url === '/de-tai') {
-      mockData = createDeTai(getPayload(config.data), user)
-    }
+      if (method === 'post' && url === '/de-tai') {
+        mockData = createDeTai(getPayload(config.data), user)
+      }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/(upload|tai-lieu)$/)) {
-      const id = url.split('/')[2]
-      const dt = getDeTaiById(id)
-      if (!dt) {
-        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/(upload|tai-lieu)$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        if (!dt) return mockReject(404, 'Không tìm thấy đề tài.')
+        if (!canMutateGvTopic(dt, user)) return mockReject(403, 'Bạn không có quyền cập nhật đề tài này.')
+        const body = getPayload(config.data)
+        const file = body.file
+        mockData = addTaiLieu(id, {
+          name: file?.name ?? body.fileName ?? `file-${Date.now()}.pdf`,
+          loai: body.loai ?? 'THUYET_MINH',
+          size: file?.size ?? body.size,
+          downloadUrl: file ? URL.createObjectURL(file) : undefined,
+        }, actor(user, 'GV'))
       }
-      if (!canGvMutate(dt, user)) return forbidden()
-      const body = getPayload(config.data)
-      const file = body.file
-      mockData = addTaiLieu(id, {
-        name: file?.name ?? body.fileName ?? `file-${Date.now()}.pdf`,
-        loai: body.loai ?? 'THUYET_MINH',
-        size: file?.size ?? body.size,
-        downloadUrl: file ? URL.createObjectURL(file) : undefined,
-      }, user?.hoTen ?? 'GV')
-    }
 
-    if (method === 'delete' && url.match(/^\/de-tai\/\d+\/tai-lieu\/\d+$/)) {
-      const [, , id, , taiLieuId] = url.split('/')
-      const dt = getDeTaiById(id)
-      if (!dt) {
-        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      if (method === 'delete' && url.match(/^\/de-tai\/\d+\/tai-lieu\/\d+$/)) {
+        const [, , id, , taiLieuId] = url.split('/')
+        const dt = getDeTaiById(id)
+        if (!dt) return mockReject(404, 'Không tìm thấy đề tài.')
+        if (!canMutateGvTopic(dt, user)) return mockReject(403, 'Bạn không có quyền cập nhật đề tài này.')
+        if (dt.trangThai !== 'DRAFT') return mockReject(422, 'Chỉ được xóa tài liệu khi đề tài đang ở trạng thái nháp.')
+        mockData = removeTaiLieu(id, taiLieuId, actor(user, 'GV'))
       }
-      if (!canGvMutate(dt, user)) return forbidden()
-      if (dt.trangThai !== 'DRAFT') {
-        return Promise.reject({ response: { status: 422, data: { message: 'Chi duoc xoa tai lieu khi de tai dang o trang thai nhap.' } } })
-      }
-      try {
-        mockData = removeTaiLieu(id, taiLieuId, user?.hoTen ?? 'GV')
-      } catch (error) {
-        return Promise.reject({ response: { status: 422, data: { message: error.message } } })
-      }
-    }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/gui-ho-so$/)) {
-      const id = url.split('/')[2]
-      const dt = getDeTaiById(id)
-      if (!dt) {
-        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/gui-ho-so$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        if (!dt) return mockReject(404, 'Không tìm thấy đề tài.')
+        if (!canMutateGvTopic(dt, user)) return mockReject(403, 'Bạn không có quyền cập nhật đề tài này.')
+        const hasThuyetMinh = dt?.taiLieu?.some(t => t.loai === 'THUYET_MINH')
+        if (!hasThuyetMinh) return mockReject(422, 'Cần tải lên bản thuyết minh trước khi gửi hồ sơ.')
+        mockData = updateTrangThai(id, 'CHO_PNCKH_XEM_XET', actor(user, 'GV'), 'Gửi hồ sơ đến P.NCKH')
       }
-      if (!canGvMutate(dt, user)) return forbidden()
-      const hasThuyetMinh = dt?.taiLieu?.some(t => t.loai === 'THUYET_MINH')
-      if (!hasThuyetMinh) {
-        return Promise.reject({ response: { status: 422, data: { message: 'Can tai len ban thuyet minh truoc khi gui ho so.' } } })
-      }
-      mockData = updateTrangThai(id, 'CHO_PNCKH_XEM_XET', user?.hoTen ?? 'GV', 'Gui ho so den P.NCKH')
-    }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/tiep-nhan$/)) {
-      const id = url.split('/')[2]
-      mockData = updateTrangThai(id, 'DANG_XEM_XET_BOI_PNCKH', user?.hoTen ?? 'NCKH', 'Tiep nhan ho so')
-    }
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/tiep-nhan$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        requireState(dt, 'CHO_PNCKH_XEM_XET', 'Chỉ tiếp nhận hồ sơ đang chờ P.NCKH xem xét.')
+        mockData = updateTrangThai(id, 'DANG_XEM_XET_BOI_PNCKH', actor(user, 'NCKH'), 'Tiếp nhận hồ sơ')
+      }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/bo-sung$/)) {
-      const id = url.split('/')[2]
-      const dt = getDeTaiById(id)
-      if (!dt) {
-        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/bo-sung$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        if (!dt) return mockReject(404, 'Không tìm thấy đề tài.')
+        if (!canMutateGvTopic(dt, user)) return mockReject(403, 'Bạn không có quyền cập nhật đề tài này.')
+        const body = getPayload(config.data)
+        mockData = updateTrangThai(id, 'CHO_PNCKH_XEM_XET', actor(user, 'GV'), 'Nộp bổ sung hồ sơ', {
+          moTaBoSung: body.moTaBoSung,
+          yeuCauBoSung: null,
+        })
       }
-      if (!canGvMutate(dt, user)) return forbidden()
-      const body = getPayload(config.data)
-      mockData = updateTrangThai(id, 'CHO_PNCKH_XEM_XET', user?.hoTen ?? 'GV', 'Nop bo sung ho so', {
-        moTaBoSung: body.moTaBoSung,
-        yeuCauBoSung: null,
-      })
-    }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/yeu-cau-bo-sung$/)) {
-      const id = url.split('/')[2]
-      const body = getPayload(config.data)
-      const noiDung = String(body.noiDung ?? body.lyDo ?? '').trim()
-      if (noiDung.length < 20) {
-        return Promise.reject({ response: { status: 422, data: { message: 'Noi dung yeu cau can it nhat 20 ky tu.' } } })
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/yeu-cau-bo-sung$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        const body = getPayload(config.data)
+        const noiDung = String(body.noiDung ?? body.lyDo ?? '').trim()
+        const deadlinePhanHoi = body.deadlinePhanHoi ?? body.deadline
+        requireState(dt, 'DANG_XEM_XET_BOI_PNCKH', 'Chỉ yêu cầu bổ sung khi hồ sơ đang được P.NCKH xem xét.')
+        const validationError = validateYeuCauBoSung(body)
+        if (validationError) return mockReject(422, validationError)
+        mockData = updateTrangThai(id, 'CHO_BO_SUNG_HO_SO', actor(user, 'NCKH'), 'Yêu cầu bổ sung hồ sơ', {
+          yeuCauBoSung: { noiDung, deadline: deadlinePhanHoi, deadlinePhanHoi },
+        })
       }
-      mockData = updateTrangThai(id, 'CHO_BO_SUNG_HO_SO', user?.hoTen ?? 'NCKH', 'Yeu cau bo sung ho so', {
-        yeuCauBoSung: {
-          noiDung,
-          deadline: body.deadline,
-        },
-      })
-    }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/lap-to-phan-bien$/)) {
-      const id = url.split('/')[2]
-      const { thanhVienIds = [] } = getPayload(config.data)
-      if (thanhVienIds.length < 2) {
-        return Promise.reject({ response: { status: 422, data: { message: 'Can it nhat 2 thanh vien to phan bien.' } } })
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/tu-choi-ho-so$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        const body = getPayload(config.data)
+        const lyDo = String(body.lyDo ?? body.noiDung ?? '').trim()
+        requireState(dt, 'DANG_XEM_XET_BOI_PNCKH', 'Chỉ từ chối hồ sơ trong bước sơ thẩm.')
+        const validationError = validateTuChoiHoSo(body)
+        if (validationError) return mockReject(422, validationError)
+        mockData = updateTrangThai(id, 'BI_TU_CHOI', actor(user, 'NCKH'), 'Từ chối hồ sơ sơ thẩm', { lyDoTuChoi: lyDo })
       }
-      const members = PB_LIST.filter(u => thanhVienIds.includes(u.id))
-        .map(u => ({ ...u, ketQua: null, nhanXet: null }))
-      mockData = updateTrangThai(id, 'DANG_PHAN_BIEN', user?.hoTen ?? 'NCKH', 'Lap to phan bien', { toPhanBien: members })
-    }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/nop-ket-qua-pb$/)) {
-      const id = url.split('/')[2]
-      const body = getPayload(config.data)
-      if (String(body.nhanXet ?? '').trim().length < 20) {
-        return Promise.reject({ response: { status: 422, data: { message: 'Nhan xet can it nhat 20 ky tu.' } } })
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/lap-to-phan-bien$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        const { thanhVienIds = [], deadlineNop } = getPayload(config.data)
+        requireState(dt, 'DANG_XEM_XET_BOI_PNCKH', 'Chỉ lập tổ phản biện khi hồ sơ đang xem xét sơ thẩm.')
+        const validationError = validateLapToPhanBien({ thanhVienIds, deadlineNop })
+        if (validationError) return mockReject(422, validationError)
+        const members = PB_LIST.filter(u => thanhVienIds.includes(u.id))
+          .map(u => ({ id: u.id, hoTen: u.hoTen, khoa: u.khoa, ketQua: null, nhanXet: null, diemTong: null, submittedAt: null }))
+        mockData = updateTrangThai(id, 'DANG_PHAN_BIEN', actor(user, 'NCKH'), 'Lập tổ phản biện', {
+          toPhanBien: members,
+          deadlineNopPhanBien: deadlineNop,
+        })
       }
-      const dt = getDeTaiById(id)
-      const pb = dt?.toPhanBien?.find(p => p.id === user?.id)
-      if (!pb) {
-        return Promise.reject({ response: { status: 403, data: { message: 'Ban khong duoc phan cong phan bien de tai nay.' } } })
-      }
-      if (pb.ketQua) {
-        return Promise.reject({ response: { status: 422, data: { message: 'Ban da nop ket qua phan bien cho de tai nay.' } } })
-      }
-      pb.ketQua = body.ketQua ?? body.deXuat
-      pb.nhanXet = body.nhanXet
-      pb.diemTong = body.diemTong
-      pb.diemChiTiet = {
-        khoaHoc: body.diemKhoaHoc,
-        congNghe: body.diemCongNghe,
-        khaDung: body.diemTinhKhaDung,
-      }
-      dt.updatedAt = new Date().toISOString()
-      mockData = JSON.parse(JSON.stringify(dt))
-    }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/xet-duyet-pb$/)) {
-      const id = url.split('/')[2]
-      const body = getPayload(config.data)
-      const ketQua = body.ketQua ?? body.quyetDinh
-      const nextStatus = ketQua === 'CHAP_THUAN'
-        ? 'DANG_LAP_HOP_DONG'
-        : ketQua === 'TU_CHOI' ? 'BI_TU_CHOI' : 'CHO_CHINH_SUA_THUYET_MINH'
-      mockData = updateTrangThai(id, nextStatus, user?.hoTen ?? 'NCKH', `Xet duyet PB: ${ketQua}`, { ghiChuPB: body.ghiChu })
-    }
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/nop-ket-qua-pb$/)) {
+        const id = url.split('/')[2]
+        const body = getPayload(config.data)
+        const dt = getDeTaiById(id)
+        const pb = dt?.toPhanBien?.find(p => p.id === user?.id)
+        if (!dt) return mockReject(404, 'Không tìm thấy đề tài.')
+        if (dt.trangThai !== 'DANG_PHAN_BIEN') return mockReject(422, 'Đề tài không ở trạng thái phản biện.')
+        if (!pb) return mockReject(403, 'Bạn không thuộc tổ phản biện của đề tài này.')
+        if (pb.ketQua) return mockReject(422, 'Bạn đã nộp kết quả phản biện cho đề tài này.')
+        const validationError = validatePbKetQua(body)
+        if (validationError) return mockReject(422, validationError)
+        const nhanXet = String(body.nhanXet ?? '').trim()
+        pb.ketQua = normalizeReviewDecision(body.ketQua ?? body.deXuat)
+        pb.nhanXet = nhanXet
+        pb.diemTong = Number(body.diemTong ?? 0)
+        pb.diemKhoaHoc = Number(body.diemKhoaHoc ?? 0)
+        pb.diemCongNghe = Number(body.diemCongNghe ?? 0)
+        pb.diemTinhKhaDung = Number(body.diemTinhKhaDung ?? 0)
+        pb.submittedAt = new Date().toISOString()
+        dt.updatedAt = new Date().toISOString()
+        dt.auditLog.push({ actor: actor(user, 'PB'), action: 'Nộp kết quả phản biện', createdAt: new Date().toISOString() })
+        mockData = clone(dt)
+      }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/hop-dong\/soan$/)) {
-      const id = url.split('/')[2]
-      const body = getPayload(config.data)
-      mockData = updateTrangThai(id, 'DANG_LAP_HOP_DONG', user?.hoTen ?? 'NCKH', 'Soan va gui hop dong cho GV xem xet', {
-        kinhPhi: body.kinhPhi,
-        thoiGianThucHien: body.thoiGian,
-        ghiChuHopDong: body.ghiChu,
-        hopDongStatus: 'DANG_SOAN',
-        gvDaDongYHopDong: false,
-        hopDongFeedback: null,
-        soHopDong: body.soHopDong,
-      })
-    }
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/xet-duyet-pb$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        const body = getPayload(config.data)
+        const quyetDinh = normalizeReviewDecision(body.quyetDinh ?? body.ketQua)
+        const ghiChu = String(body.ghiChu ?? '').trim()
+        const noiDung = String(body.noiDung ?? '').trim()
+        const deadlinePhanHoi = body.deadlinePhanHoi ?? body.deadline
+        requireState(dt, 'DANG_PHAN_BIEN', 'Chỉ xét duyệt kết quả khi đề tài đang phản biện.')
+        const validationError = validateXetDuyetPB(body, dt?.toPhanBien)
+        if (validationError) return mockReject(422, validationError)
+        const nextStatus = quyetDinh === 'CHAP_NHAN'
+          ? 'DANG_LAP_HOP_DONG'
+          : quyetDinh === 'TU_CHOI' ? 'BI_TU_CHOI' : 'CHO_CHINH_SUA_THUYET_MINH'
+        mockData = updateTrangThai(id, nextStatus, actor(user, 'NCKH'), `Xét duyệt PB: ${quyetDinh}`, {
+          ketQuaXetDuyetPB: quyetDinh,
+          ghiChuPB: ghiChu,
+          yeuCauChinhSuaThuyetMinh: quyetDinh === 'CAN_SUA' ? { noiDung, deadlinePhanHoi } : null,
+          hopDongStatus: quyetDinh === 'CHAP_NHAN' ? 'CHUA_SOAN' : dt.hopDongStatus,
+        })
+      }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/gv-dong-y-hop-dong$/)) {
-      const id = url.split('/')[2]
-      const dt = getDeTaiById(id)
-      if (!dt) {
-        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/(hop-dong\/soan|soan-hop-dong)$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        const body = getPayload(config.data)
+        requireState(dt, 'DANG_LAP_HOP_DONG', 'Chỉ soạn hợp đồng khi đề tài đang lập hợp đồng.')
+        const contractStatus = normalizeContractStatus(dt)
+        if (!CONTRACT_DRAFTABLE_STATUSES.includes(contractStatus)) {
+          return mockReject(409, 'Hợp đồng đã được gửi hoặc đã qua bước soạn, không thể soạn lại.')
+        }
+        if (Number(body.kinhPhi) !== Number(dt.kinhPhi)) {
+          return mockReject(422, 'Kinh phí hợp đồng phải theo kinh phí đã phê duyệt của đề tài.')
+        }
+        const validationError = validateSoanHopDong(body, dt)
+        if (validationError) return mockReject(422, validationError)
+        const tyLeTamUngPercent = asPercentRate(body.tyLeTamUng)
+        mockData = updateTrangThai(id, 'DANG_LAP_HOP_DONG', actor(user, 'NCKH'), 'Soạn và gửi hợp đồng cho GV xem xét', {
+          kinhPhi: Number(dt.kinhPhi),
+          ngayBatDau: body.ngayBatDau,
+          ngayKetThuc: body.ngayKetThuc,
+          tyLeTamUng: tyLeTamUngPercent,
+          ghiChuHopDong: body.ghiChu,
+          hopDongStatus: 'CHO_GV_XEM',
+          gvDaDongYHopDong: false,
+          hopDongFeedback: null,
+          soHopDong: body.soHopDong ?? dt.soHopDong ?? `HD-${new Date().getFullYear()}-${String(id).padStart(4, '0')}`,
+        })
       }
-      if (!canGvMutate(dt, user)) return forbidden()
-      if (dt?.hopDongFeedback) {
-        return Promise.reject({ response: { status: 422, data: { message: 'Hop dong dang co phan hoi chinh sua, can P.NCKH soan lai truoc khi dong y.' } } })
-      }
-      mockData = updateTrangThai(id, 'DANG_LAP_HOP_DONG', user?.hoTen ?? 'GV', 'GV dong y hop dong', {
-        gvDaDongYHopDong: true,
-        hopDongStatus: 'CHO_KY',
-        ngayGvDongYHopDong: new Date().toISOString(),
-      })
-    }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/ky-hop-dong$/)) {
-      const id = url.split('/')[2]
-      const body = getPayload(config.data)
-      const dt = getDeTaiById(id)
-      if (!dt?.gvDaDongYHopDong) {
-        return Promise.reject({ response: { status: 422, data: { message: 'Can GV dong y hop dong truoc khi xac nhan ky.' } } })
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/gv-dong-y-hop-dong$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        if (!dt) return mockReject(404, 'Không tìm thấy đề tài.')
+        if (!canMutateGvTopic(dt, user)) return mockReject(403, 'Bạn không có quyền cập nhật đề tài này.')
+        const contractStatus = normalizeContractStatus(dt)
+        if (!CONTRACT_REVIEWABLE_STATUSES.includes(contractStatus)) return mockReject(409, 'Hợp đồng chưa ở trạng thái chờ GV phản hồi.')
+        if (hasOpenContractFeedback(dt)) return mockReject(422, 'Hợp đồng đang có phản hồi chỉnh sửa, cần P.NCKH soạn lại trước khi đồng ý.')
+        mockData = updateTrangThai(id, 'DANG_LAP_HOP_DONG', actor(user, 'GV'), 'GV đồng ý hợp đồng', {
+          gvDaDongYHopDong: true,
+          hopDongStatus: 'CHO_KY',
+          ngayGvDongYHopDong: new Date().toISOString(),
+        })
       }
-      if (dt?.hopDongFeedback) {
-        return Promise.reject({ response: { status: 422, data: { message: 'Hop dong dang co phan hoi chinh sua, can soan lai truoc khi ky.' } } })
-      }
-      mockData = updateTrangThai(id, 'DANG_THUC_HIEN', user?.hoTen ?? 'NCKH', 'Ky hop dong thanh cong', {
-        soHopDong: body.soHopDong ?? `HD-${new Date().getFullYear()}-${String(id).padStart(4, '0')}`,
-        ngayKyHopDong: new Date().toISOString(),
-        hopDongStatus: 'DA_KY',
-      })
-    }
 
-    if (method === 'post' && url.match(/\/de-tai\/\d+\/hop-dong\/yeu-cau-chinh-sua$/)) {
-      const id = url.split('/')[2]
-      const dt = getDeTaiById(id)
-      if (!dt) {
-        return Promise.reject({ response: { status: 404, data: { message: 'Khong tim thay de tai.' } } })
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/ky-hop-dong$/)) {
+        const id = url.split('/')[2]
+        const body = getPayload(config.data)
+        const dt = getDeTaiById(id)
+        requireState(dt, 'DANG_LAP_HOP_DONG', 'Chỉ ký hợp đồng khi đề tài đang lập hợp đồng.')
+        const contractStatus = normalizeContractStatus(dt)
+        if (contractStatus !== 'CHO_KY') return mockReject(409, 'Chỉ xác nhận ký khi GV đã đồng ý nội dung hợp đồng.')
+        if (!dt?.gvDaDongYHopDong) return mockReject(422, 'Cần GV đồng ý hợp đồng trước khi xác nhận ký.')
+        if (hasOpenContractFeedback(dt)) return mockReject(422, 'Hợp đồng đang có phản hồi chỉnh sửa, cần soạn lại trước khi ký.')
+        const validationError = validateKyHopDong(body)
+        if (validationError) return mockReject(422, validationError)
+        const fileScan = body.fileScan ?? body.file
+        mockData = updateTrangThai(id, 'DANG_THUC_HIEN', actor(user, 'NCKH'), 'Ký hợp đồng thành công', {
+          soHopDong: body.soHopDong ?? dt.soHopDong ?? `HD-${new Date().getFullYear()}-${String(id).padStart(4, '0')}`,
+          ngayKyHopDong: body.ngayKy,
+          hopDongStatus: 'DA_KY',
+          fileScanHopDong: fileScan?.name ?? body.fileName ?? 'hop-dong-da-ky.pdf',
+        })
       }
-      if (!canGvMutate(dt, user)) return forbidden()
-      const body = getPayload(config.data)
-      const noiDung = String(body.noiDung ?? '').trim()
-      if (noiDung.length < 10) {
-        return Promise.reject({ response: { status: 422, data: { message: 'Vui long nhap noi dung chinh sua it nhat 10 ky tu.' } } })
-      }
-      mockData = updateTrangThai(id, 'DANG_LAP_HOP_DONG', user?.hoTen ?? 'GV', 'GV phan hoi hop dong', {
-        gvDaDongYHopDong: false,
-        hopDongStatus: 'CAN_SUA',
-        hopDongFeedback: {
-          noiDung,
-          createdAt: new Date().toISOString(),
-          actor: user?.hoTen ?? 'GV',
-        },
-      })
-    }
 
-    if (method === 'get' && url === '/users') mockData = PB_LIST
-    if (method === 'get' && url === '/ky-nckh') mockData = KY_NCKH_LIST
+      if (method === 'post' && url.match(/\/de-tai\/\d+\/hop-dong\/yeu-cau-chinh-sua$/)) {
+        const id = url.split('/')[2]
+        const dt = getDeTaiById(id)
+        if (!dt) return mockReject(404, 'Không tìm thấy đề tài.')
+        if (!canMutateGvTopic(dt, user)) return mockReject(403, 'Bạn không có quyền cập nhật đề tài này.')
+        const contractStatus = normalizeContractStatus(dt)
+        if (!CONTRACT_REVIEWABLE_STATUSES.includes(contractStatus)) return mockReject(409, 'Hợp đồng chưa ở trạng thái chờ GV phản hồi.')
+        if (hasOpenContractFeedback(dt)) return mockReject(409, 'Bạn đã gửi yêu cầu chỉnh sửa, vui lòng chờ P.NCKH cập nhật hợp đồng.')
+        if (dt?.gvDaDongYHopDong) return mockReject(409, 'GV đã đồng ý hợp đồng, không thể gửi yêu cầu chỉnh sửa.')
+        const body = getPayload(config.data)
+        const noiDung = String(body.noiDung ?? '').trim()
+        if (noiDung.length < 10) return mockReject(422, 'Vui lòng nhập nội dung chỉnh sửa ít nhất 10 ký tự.')
+        mockData = updateTrangThai(id, 'DANG_LAP_HOP_DONG', actor(user, 'GV'), 'GV phản hồi hợp đồng', {
+          gvDaDongYHopDong: false,
+          hopDongStatus: 'CAN_SUA',
+          hopDongFeedback: {
+            noiDung,
+            createdAt: new Date().toISOString(),
+            actor: actor(user, 'GV'),
+          },
+        })
+      }
+
+      if (method === 'get' && url === '/users') mockData = clone(PB_LIST)
+      if (method === 'get' && url === '/ky-nckh') mockData = clone(KY_NCKH_LIST)
+    } catch (error) {
+      return mockReject(422, error.message)
+    }
 
     if (mockData !== null) {
       return Promise.reject({ isMockSuccess: true, data: mockData })
     }
 
-    return Promise.reject({ response: { status: 501, data: { message: `Mock chua handle: ${method} ${url}` } } })
+    return mockReject(501, `Mock chưa xử lý: ${method} ${url}`)
   })
 
   api.interceptors.response.use(

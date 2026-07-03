@@ -179,7 +179,148 @@ export const MOCK_DE_TAI = [
       { id: 4, hoTen: 'TS. Phạm Quang Đức', ketQua: 'CHAP_NHAN', nhanXet: 'Đề tài phù hợp mục tiêu.' },
       { id: 6, hoTen: 'TS. Đỗ Minh Phong',  ketQua: 'CHAP_NHAN', nhanXet: 'Tính ứng dụng cao.' },
     ],
+    hopDongStatus: 'CHO_GV_XEM',
+    gvDaDongYHopDong: false,
+    hopDongFeedback: null,
     soHopDong: null,
+  },
+  {
+    id: 10,
+    maSo: 'NCKH-2026-0010',
+    tenDeTai: 'Ứng dụng thị giác máy tính trong kiểm kê thiết bị phòng thí nghiệm',
+    trangThai: 'DANG_PHAN_BIEN',
+    chuNhiemId: 1,
+    chuNhiem: 'TS. Nguyễn Văn Anh',
+    linhVuc: 'Trí tuệ nhân tạo',
+    kyNckhId: 2,
+    kyNckh: 'Kỳ NCKH 2026-II',
+    moTa: 'Đề tài đã có đủ kết quả phản biện để P.NCKH demo bước chấp nhận và chuyển sang lập hợp đồng.',
+    kinhPhi: 110000000,
+    updatedAt: days(0),
+    createdAt: days(28),
+    taiLieu: [
+      { id: 110, loai: 'THUYET_MINH', tenFile: 'thuyet-minh-de-tai-0010.pdf', downloadUrl: '#', size: '4.1 MB', uploadedAt: days(18) }
+    ],
+    auditLog: [
+      makeLog('TS. Nguyễn Văn Anh', 'Tạo đề tài', days(28)),
+      makeLog('TS. Nguyễn Văn Anh', 'Gửi hồ sơ', days(18)),
+      makeLog('CN. Lê Văn Cường', 'Tiếp nhận và lập tổ phản biện', days(8)),
+      makeLog('Tổ phản biện', 'Đã nộp đủ kết quả phản biện', days(0)),
+    ],
+    toPhanBien: [
+      { id: 4, hoTen: 'TS. Phạm Quang Đức', ketQua: 'CHAP_NHAN', diemTong: 91, nhanXet: 'Đề tài có mục tiêu rõ, dữ liệu đầu vào khả thi và kế hoạch triển khai phù hợp.', submittedAt: days(1) },
+      { id: 6, hoTen: 'TS. Đỗ Minh Phong', ketQua: 'CHAP_NHAN', diemTong: 87, nhanXet: 'Phương pháp nhận dạng phù hợp, cần chú ý quản trị dữ liệu ảnh khi triển khai.', submittedAt: days(1) },
+    ],
+  },
+  {
+    id: 11,
+    maSo: 'NCKH-2026-0011',
+    tenDeTai: 'Nền tảng theo dõi tiến độ đề tài bằng phân tích dữ liệu thời gian thực',
+    trangThai: 'DANG_LAP_HOP_DONG',
+    chuNhiemId: 1,
+    chuNhiem: 'TS. Nguyễn Văn Anh',
+    linhVuc: 'Hệ thống thông tin',
+    kyNckhId: 2,
+    kyNckh: 'Kỳ NCKH 2026-II',
+    moTa: 'Đề tài demo trạng thái P.NCKH đã soạn hợp đồng và đang chờ GV xem, đồng ý hoặc yêu cầu chỉnh sửa.',
+    kinhPhi: 88000000,
+    ngayBatDau: '2026-08-15',
+    ngayKetThuc: '2027-02-15',
+    tyLeTamUng: 40,
+    updatedAt: days(0),
+    createdAt: days(26),
+    taiLieu: [
+      { id: 111, loai: 'THUYET_MINH', tenFile: 'thuyet-minh-de-tai-0011.pdf', downloadUrl: '#', size: '3.7 MB', uploadedAt: days(17) }
+    ],
+    auditLog: [
+      makeLog('TS. Nguyễn Văn Anh', 'Tạo đề tài', days(26)),
+      makeLog('CN. Lê Văn Cường', 'Chấp nhận kết quả phản biện', days(3)),
+      makeLog('CN. Lê Văn Cường', 'Soạn và gửi hợp đồng cho GV xem xét', days(0)),
+    ],
+    toPhanBien: [
+      { id: 4, hoTen: 'TS. Phạm Quang Đức', ketQua: 'CHAP_NHAN', diemTong: 86, nhanXet: 'Nội dung phù hợp nhu cầu quản trị tiến độ đề tài.', submittedAt: days(4) },
+      { id: 5, hoTen: 'PGS. Vũ Thị Em', ketQua: 'CHAP_NHAN', diemTong: 83, nhanXet: 'Kế hoạch triển khai khả thi, nên làm rõ phạm vi dashboard thời gian thực.', submittedAt: days(4) },
+    ],
+    hopDongStatus: 'CHO_GV_XEM',
+    gvDaDongYHopDong: false,
+    hopDongFeedback: null,
+    soHopDong: 'HD-2026-0011',
+    ghiChuHopDong: 'Dự thảo lần 1 gửi GV xem xét.',
+  },
+  {
+    id: 12,
+    maSo: 'NCKH-2026-0012',
+    tenDeTai: 'Mô hình gợi ý tài liệu nghiên cứu cho giảng viên trẻ',
+    trangThai: 'DANG_LAP_HOP_DONG',
+    chuNhiemId: 1,
+    chuNhiem: 'TS. Nguyễn Văn Anh',
+    linhVuc: 'Khoa học dữ liệu',
+    kyNckhId: 2,
+    kyNckh: 'Kỳ NCKH 2026-II',
+    moTa: 'Đề tài demo nhánh GV yêu cầu chỉnh sửa hợp đồng để P.NCKH mở màn chỉnh sửa và gửi lại.',
+    kinhPhi: 72000000,
+    ngayBatDau: '2026-09-01',
+    ngayKetThuc: '2027-03-01',
+    tyLeTamUng: 30,
+    updatedAt: days(0),
+    createdAt: days(24),
+    taiLieu: [
+      { id: 112, loai: 'THUYET_MINH', tenFile: 'thuyet-minh-de-tai-0012.pdf', downloadUrl: '#', size: '2.9 MB', uploadedAt: days(16) }
+    ],
+    auditLog: [
+      makeLog('TS. Nguyễn Văn Anh', 'Tạo đề tài', days(24)),
+      makeLog('CN. Lê Văn Cường', 'Chấp nhận kết quả phản biện', days(4)),
+      makeLog('CN. Lê Văn Cường', 'Soạn và gửi hợp đồng cho GV xem xét', days(2)),
+      makeLog('TS. Nguyễn Văn Anh', 'GV phản hồi hợp đồng', days(0)),
+    ],
+    toPhanBien: [
+      { id: 5, hoTen: 'PGS. Vũ Thị Em', ketQua: 'CHAP_NHAN', diemTong: 85, nhanXet: 'Đề tài có hướng ứng dụng rõ trong hỗ trợ nghiên cứu.', submittedAt: days(5) },
+      { id: 6, hoTen: 'TS. Đỗ Minh Phong', ketQua: 'CHAP_NHAN', diemTong: 82, nhanXet: 'Cần quản lý rủi ro bản quyền dữ liệu nhưng tổng thể khả thi.', submittedAt: days(5) },
+    ],
+    hopDongStatus: 'CAN_SUA',
+    gvDaDongYHopDong: false,
+    hopDongFeedback: {
+      noiDung: 'Đề nghị P.NCKH điều chỉnh ngày kết thúc sang 31/03/2027 và bổ sung ghi chú về phạm vi dữ liệu thử nghiệm.',
+      createdAt: days(0),
+      actor: 'TS. Nguyễn Văn Anh',
+    },
+    soHopDong: 'HD-2026-0012',
+    ghiChuHopDong: 'Dự thảo cần rà soát lại theo phản hồi của GV.',
+  },
+  {
+    id: 9,
+    maSo: 'NCKH-2026-0009',
+    tenDeTai: 'He thong canh bao som ngap do thi dua tren cam bien IoT',
+    trangThai: 'DANG_LAP_HOP_DONG',
+    chuNhiemId: 1,
+    chuNhiem: 'TS. Nguyen Van Anh',
+    linhVuc: 'IoT',
+    kyNckhId: 2,
+    kyNckh: 'Ky NCKH 2026-II',
+    moTa: 'De tai da duoc phe duyet phan bien va giang vien da dong y hop dong de demo buoc ky.',
+    kinhPhi: 98000000,
+    ngayBatDau: '2026-08-01',
+    ngayKetThuc: '2027-01-31',
+    tyLeTamUng: 50,
+    updatedAt: days(0),
+    createdAt: days(22),
+    taiLieu: [
+      { id: 109, loai: 'THUYET_MINH', tenFile: 'thuyet-minh-de-tai-009.pdf', downloadUrl: '#', size: '3.4 MB', uploadedAt: days(20) }
+    ],
+    auditLog: [
+      makeLog('TS. Nguyen Van Anh', 'Tao de tai', days(22)),
+      makeLog('CN. Le Van Cuong', 'Chap nhan ket qua phan bien va soan hop dong', days(2)),
+      makeLog('TS. Nguyen Van Anh', 'GV dong y hop dong', days(0)),
+    ],
+    toPhanBien: [
+      { id: 4, hoTen: 'TS. Pham Quang Duc', ketQua: 'CHAP_NHAN', diemTong: 88, nhanXet: 'Noi dung tot, co kha nang ung dung trong do thi thong minh.', submittedAt: days(3) },
+      { id: 5, hoTen: 'PGS. Vu Thi Em', ketQua: 'CHAP_NHAN', diemTong: 84, nhanXet: 'Phuong phap kha ro, can quan ly rui ro trien khai cam bien.', submittedAt: days(3) },
+    ],
+    hopDongStatus: 'CHO_KY',
+    gvDaDongYHopDong: true,
+    hopDongFeedback: null,
+    soHopDong: 'HD-2026-0009',
+    ngayGvDongYHopDong: days(0),
   },
   {
     id: 7,
@@ -229,8 +370,8 @@ export const MOCK_DE_TAI = [
 
 // ── MOCK STATE (mutated by actions) ────────────────
 let _deTaiList = JSON.parse(JSON.stringify(MOCK_DE_TAI))
-let _nextId = 9
-let _nextMaSo = 9
+let _nextId = 13
+let _nextMaSo = 13
 
 export function getDB() { return _deTaiList }
 

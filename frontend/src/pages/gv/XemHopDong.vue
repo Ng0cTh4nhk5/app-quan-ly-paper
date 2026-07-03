@@ -4,7 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDetaiStore } from '@/stores/detai.store'
 import { useToast } from '@/composables/useToast'
-import { AlertTriangle, ArrowLeft, Check, CheckCircle2, Hourglass, MessageSquareText, PenTool, Printer, X } from '@lucide/vue'
+import EmptyState from '@/components/EmptyState.vue'
+import {
+  CONTRACT_REVIEWABLE_STATUSES,
+  hasOpenContractFeedback,
+  normalizeContractStatus,
+} from '@/mock/sopDGuards'
+import { AlertTriangle, ArrowLeft, Check, CheckCircle2, FileText, Hourglass, MessageSquareText, PenTool, Printer, X } from '@lucide/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,20 +24,25 @@ const feedbackSubmitting = ref(false)
 const showFeedbackDialog = ref(false)
 const feedbackNoiDung = ref('')
 const feedbackError = ref('')
+const pageReady = ref(false)
 
-onMounted(() => store.layChiTiet(route.params.id).catch(() => {}))
+onMounted(async () => {
+  try {
+    await store.layChiTiet(route.params.id)
+  } catch {
+    // Error state is already stored for the template.
+  } finally {
+    pageReady.value = true
+  }
+})
 
-const hasPendingFeedback = computed(() => Boolean(chiTiet.value?.hopDongFeedback))
+const contractStatus = computed(() => normalizeContractStatus(chiTiet.value))
+const hasPendingFeedback = computed(() => hasOpenContractFeedback(chiTiet.value))
+const canReviewContract = computed(() => CONTRACT_REVIEWABLE_STATUSES.includes(contractStatus.value))
 
-const canDongY = computed(() =>
+const canRespondToContract = computed(() =>
   chiTiet.value?.trangThai === 'DANG_LAP_HOP_DONG' &&
-  !agreed.value &&
-  !chiTiet.value?.gvDaDongYHopDong &&
-  !hasPendingFeedback.value
-)
-
-const canYeuCauChinhSua = computed(() =>
-  chiTiet.value?.trangThai === 'DANG_LAP_HOP_DONG' &&
+  canReviewContract.value &&
   !agreed.value &&
   !chiTiet.value?.gvDaDongYHopDong &&
   !hasPendingFeedback.value
@@ -138,7 +149,7 @@ function fmtM(n) {
             <Printer size="16" /> In hợp đồng
           </button>
           <button
-            v-if="canYeuCauChinhSua"
+            v-if="canRespondToContract"
             class="btn btn-secondary flex items-center gap-2"
             :disabled="feedbackSubmitting"
             @click="showFeedbackDialog = true"
@@ -148,7 +159,7 @@ function fmtM(n) {
             Yêu cầu chỉnh sửa
           </button>
           <button
-            v-if="canDongY"
+            v-if="canRespondToContract"
             class="btn btn-primary flex items-center gap-2"
             :disabled="agreeing"
             @click="dongYHopDong"
@@ -194,13 +205,13 @@ function fmtM(n) {
           </template>
         </div>
 
-        <div v-if="chiTiet.hopDongFeedback" class="feedback-banner">
+        <div v-if="hasPendingFeedback" class="feedback-banner">
           <div class="feedback-title">
             <MessageSquareText size="16" />
             Phản hồi chỉnh sửa đã gửi
           </div>
-          <p>{{ chiTiet.hopDongFeedback.noiDung }}</p>
-          <span>{{ fmt(chiTiet.hopDongFeedback.createdAt) }}</span>
+          <p>{{ chiTiet.hopDongFeedback?.noiDung || 'Bạn đã gửi yêu cầu chỉnh sửa, đang chờ P.NCKH cập nhật hợp đồng.' }}</p>
+          <span>{{ fmt(chiTiet.hopDongFeedback?.createdAt) }}</span>
         </div>
 
         <div class="contract-body">
@@ -276,6 +287,13 @@ function fmtM(n) {
         </div>
       </div>
     </div>
+
+    <EmptyState
+      v-else-if="pageReady"
+      :icon="FileText"
+      title="Không tìm thấy hợp đồng"
+      message="Đề tài không tồn tại hoặc bạn không có quyền xem hợp đồng này."
+    />
 
     <div
       v-if="showFeedbackDialog && chiTiet"

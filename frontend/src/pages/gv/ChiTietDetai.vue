@@ -25,8 +25,8 @@ import {
 const route = useRoute()
 const router = useRouter()
 const store = useDetaiStore()
+const toast = useToast()
 const { chiTiet, loading, error, canActions, actionLoading } = storeToRefs(store)
-const { add: toastAdd } = useToast()
 
 const uploading = ref(false)
 const supportsDocumentDelete = !import.meta.env.VITE_API_URL
@@ -38,27 +38,14 @@ onMounted(async () => {
   } catch {}
 })
 
-function actionAllowed(action, fallback) {
-  return Object.prototype.hasOwnProperty.call(canActions.value, action)
-    ? !!canActions.value[action]
-    : fallback
-}
-
-const canUploadThuyetMinh = computed(() =>
-  actionAllowed('uploadThuyetMinh', ['DRAFT', 'CHO_CHINH_SUA_THUYET_MINH'].includes(chiTiet.value?.trangThai))
+const canEditSubmission = computed(() =>
+  ['DRAFT', 'CHO_CHINH_SUA_THUYET_MINH'].includes(chiTiet.value?.trangThai)
 )
-const canGuiHoSo = computed(() =>
-  actionAllowed('guiHoSo', ['DRAFT', 'CHO_CHINH_SUA_THUYET_MINH'].includes(chiTiet.value?.trangThai) && hasThuyetMinh.value)
-)
-const canXoaTaiLieuPreview = computed(() =>
-  supportsDocumentDelete && actionAllowed('xoaTaiLieu', chiTiet.value?.trangThai === 'DRAFT')
-)
-const canBoSung = computed(() =>
-  actionAllowed('boSungHoSo', chiTiet.value?.trangThai === 'CHO_BO_SUNG_HO_SO')
-)
-const canXemHopDong = computed(() =>
-  actionAllowed('xemHopDong', ['DANG_LAP_HOP_DONG', 'DANG_THUC_HIEN', 'HOAN_TAT'].includes(chiTiet.value?.trangThai))
-)
+const canUploadThuyetMinh = canEditSubmission
+const canGuiHoSo = computed(() => canActions.value.guiHoSo)
+const canXoaTaiLieuPreview = computed(() => canActions.value.xoaTaiLieu)
+const canBoSung = computed(() => canActions.value.boSungHoSo)
+const canXemHopDong = computed(() => canActions.value.xemHopDong)
 const taiLieu = computed(() => chiTiet.value?.taiLieu ?? [])
 const auditItems = computed(() => chiTiet.value?.auditLog ?? [])
 const hasThuyetMinh = computed(() => taiLieu.value.some(t => t.loai === 'THUYET_MINH'))
@@ -74,7 +61,11 @@ const STEPS = [
 const STATUS_ORDER = STEPS.map(s => s.key)
 
 function showToast(type, msg) {
-  toastAdd({ severity: type, summary: msg, life: 4000 })
+  toast.add({
+    severity: type === 'success' ? 'success' : 'error',
+    summary: type === 'success' ? 'Thành công' : 'Lỗi',
+    detail: msg,
+  })
 }
 
 function fmt(iso, full = false) {
@@ -141,9 +132,9 @@ async function onUploadThuyetMinh(event) {
 async function xoaTaiLieu(taiLieuId) {
   try {
     await store.xoaTaiLieu(route.params.id, taiLieuId)
-    showToast('success', 'Da xoa tai lieu khoi ban nhap.')
+    showToast('success', 'Đã xóa tài liệu khỏi bản nháp.')
   } catch (e) {
-    showToast('error', e.response?.data?.message ?? 'Khong the xoa tai lieu.')
+    showToast('error', e.response?.data?.message ?? 'Không thể xóa tài liệu.')
   }
 }
 </script>
@@ -199,7 +190,7 @@ async function xoaTaiLieu(taiLieuId) {
         </div>
       </div>
 
-      <div v-if="canUploadThuyetMinh && !hasThuyetMinh" class="warning-banner mb-4 flex gap-3">
+      <div v-if="canEditSubmission && !hasThuyetMinh" class="warning-banner mb-4 flex gap-3">
         <AlertTriangle class="shrink-0" :size="20" />
         <div>
           <strong>Cần bản thuyết minh:</strong> Tải lên file PDF hoặc DOCX trước khi gửi hồ sơ.
@@ -255,7 +246,7 @@ async function xoaTaiLieu(taiLieuId) {
               <h3 class="card-title">Thuyết minh & tài liệu</h3>
             </div>
             <div class="card-body">
-              <div v-if="canUploadThuyetMinh" class="upload-panel mb-4">
+              <div v-if="canEditSubmission" class="upload-panel mb-4">
                 <div>
                   <div class="upload-title">Bản thuyết minh đề tài</div>
                   <p class="upload-desc">Tải lên file PDF hoặc DOCX, tối đa 20MB/file trước khi gửi hồ sơ.</p>

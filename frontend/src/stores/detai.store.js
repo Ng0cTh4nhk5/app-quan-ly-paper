@@ -1,18 +1,44 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/api/axios'
+import {
+  CONTRACT_REVIEWABLE_STATUSES,
+  enforceContractActionGuards,
+  hasOpenContractFeedback,
+  normalizeContractStatus,
+} from '@/mock/sopDGuards'
+
+const EMPTY_ACTIONS = {
+  guiHoSo: false,
+  boSungHoSo: false,
+  xoaTaiLieu: false,
+  xemHopDong: false,
+  dongYHopDong: false,
+}
+
+function fallbackActions(dt) {
+  const hasThuyetMinh = dt?.taiLieu?.some(t => t.loai === 'THUYET_MINH')
+  const contractStatus = normalizeContractStatus(dt)
+  const hasContractFeedback = hasOpenContractFeedback(dt)
+  return {
+    ...EMPTY_ACTIONS,
+    guiHoSo: ['DRAFT', 'CHO_CHINH_SUA_THUYET_MINH'].includes(dt?.trangThai) && hasThuyetMinh,
+    boSungHoSo: dt?.trangThai === 'CHO_BO_SUNG_HO_SO',
+    xoaTaiLieu: dt?.trangThai === 'DRAFT',
+    xemHopDong: ['DANG_LAP_HOP_DONG', 'DANG_THUC_HIEN', 'HOAN_TAT'].includes(dt?.trangThai),
+    dongYHopDong: dt?.trangThai === 'DANG_LAP_HOP_DONG' && CONTRACT_REVIEWABLE_STATUSES.includes(contractStatus) && !dt?.gvDaDongYHopDong && !hasContractFeedback,
+  }
+}
 
 const isRealApi = !!import.meta.env.VITE_API_URL
 
 export const useDetaiStore = defineStore('detai', () => {
   const danhSach = ref([])
   const chiTiet  = ref(null)
+  const canActions = ref({ ...EMPTY_ACTIONS })
   const loading  = ref(false)
   const error    = ref(null)
-  const canActions = ref({})
-  const actionLoading = ref({
-    guiHoSo: false,
-  })
+  const actionLoading = ref({})
 
   const deTaiDraft     = computed(() => danhSach.value.filter(d => d.trangThai === 'DRAFT'))
   const deTaiChoBoSung = computed(() => danhSach.value.filter(d => d.trangThai === 'CHO_BO_SUNG_HO_SO'))
@@ -32,8 +58,10 @@ export const useDetaiStore = defineStore('detai', () => {
     try {
       const res = await api.get(`/de-tai/${id}`)
       chiTiet.value = res.data
+      await layCanActions(id)
     } catch (e) {
       chiTiet.value = null
+      canActions.value = { ...EMPTY_ACTIONS }
       error.value = e.response?.data?.message ?? 'Khong the tai chi tiet de tai.'
       throw e
     } finally { loading.value = false }
@@ -42,11 +70,22 @@ export const useDetaiStore = defineStore('detai', () => {
   async function layCanActions(id) {
     try {
       const res = await api.get(`/de-tai/${id}/can-actions`)
-      canActions.value = res.data ?? {}
-      return canActions.value
+      canActions.value = enforceContractActionGuards({ ...EMPTY_ACTIONS, ...res.data }, chiTiet.value, 'GIANG_VIEN')
     } catch {
-      canActions.value = {}
-      return canActions.value
+      canActions.value = enforceContractActionGuards(fallbackActions(chiTiet.value), chiTiet.value, 'GIANG_VIEN')
+    }
+    return canActions.value
+  }
+
+  async function runAction(key, id, fn) {
+    actionLoading.value = { ...actionLoading.value, [key]: true }
+    try {
+      const updated = await fn()
+      _sync(id, updated)
+      await layCanActions(id)
+      return updated
+    } finally {
+      actionLoading.value = { ...actionLoading.value, [key]: false }
     }
   }
 
@@ -63,41 +102,36 @@ export const useDetaiStore = defineStore('detai', () => {
   }
 
   async function guiHoSo(detaiId) {
-    actionLoading.value.guiHoSo = true
-    try {
+    return runAction('guiHoSo', detaiId, async () => {
       const res = await api.post(`/de-tai/${detaiId}/gui-ho-so`)
-      _sync(detaiId, res.data)
-      await layCanActions(detaiId)
       return res.data
-    } finally {
-      actionLoading.value.guiHoSo = false
-    }
+    })
   }
 
   async function boSungHoSo(detaiId, payload) {
-    const url = isRealApi ? `/de-tai/${detaiId}/nop-bo-sung` : `/de-tai/${detaiId}/bo-sung`
-    const res = await api.post(url, payload)
-    _sync(detaiId, res.data)
-    await layCanActions(detaiId)
-    return res.data
+    return runAction('boSungHoSo', detaiId, async () => {
+      const url = isRealApi ? `/de-tai/${detaiId}/nop-bo-sung` : `/de-tai/${detaiId}/bo-sung`
+      const res = await api.post(url, payload)
+      return res.data
+    })
   }
 
   async function dongYHopDong(detaiId, payload = {}) {
-    const url = isRealApi ? `/de-tai/${detaiId}/phan-hoi-hop-dong` : `/de-tai/${detaiId}/gv-dong-y-hop-dong`
-    const body = isRealApi ? { dongY: true, noiDungGhiChu: payload.noiDungGhiChu } : payload
-    const res = await api.post(url, body)
-    _sync(detaiId, res.data)
-    await layCanActions(detaiId)
-    return res.data
+    return runAction('dongYHopDong', detaiId, async () => {
+      const url = isRealApi ? `/de-tai/${detaiId}/phan-hoi-hop-dong` : `/de-tai/${detaiId}/gv-dong-y-hop-dong`
+      const body = isRealApi ? { dongY: true, noiDungGhiChu: payload.noiDungGhiChu } : payload
+      const res = await api.post(url, body)
+      return res.data
+    })
   }
 
   async function yeuCauChinhSuaHopDong(detaiId, payload) {
-    const url = isRealApi ? `/de-tai/${detaiId}/phan-hoi-hop-dong` : `/de-tai/${detaiId}/hop-dong/yeu-cau-chinh-sua`
-    const body = isRealApi ? { dongY: false, noiDungGhiChu: payload.noiDung ?? payload.noiDungGhiChu } : payload
-    const res = await api.post(url, body)
-    _sync(detaiId, res.data)
-    await layCanActions(detaiId)
-    return res.data
+    return runAction('yeuCauChinhSuaHopDong', detaiId, async () => {
+      const url = isRealApi ? `/de-tai/${detaiId}/phan-hoi-hop-dong` : `/de-tai/${detaiId}/hop-dong/yeu-cau-chinh-sua`
+      const body = isRealApi ? { dongY: false, noiDungGhiChu: payload.noiDung ?? payload.noiDungGhiChu } : payload
+      const res = await api.post(url, body)
+      return res.data
+    })
   }
 
   async function uploadFile(detaiId, file, loai = 'THUYET_MINH') {
@@ -130,7 +164,7 @@ export const useDetaiStore = defineStore('detai', () => {
   }
 
   return {
-    danhSach, chiTiet, loading, error, canActions, actionLoading,
+    danhSach, chiTiet, canActions, loading, error, actionLoading,
     deTaiDraft, deTaiChoBoSung,
     layDanhSach, layChiTiet, layCanActions, taoDeTai,
     guiHoSo, boSungHoSo, dongYHopDong, yeuCauChinhSuaHopDong, uploadFile, xoaTaiLieu,
