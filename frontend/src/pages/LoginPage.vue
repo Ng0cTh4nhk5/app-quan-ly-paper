@@ -1,10 +1,14 @@
 <script setup>
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { User, Building, Search, Info } from '@lucide/vue'
 
 const auth   = useAuthStore()
 const router = useRouter()
+const form = reactive({ username: '', password: '' })
+const loginError = ref('')
+const loggingIn = ref(false)
 
 const DEMO_ACCOUNTS = [
   {
@@ -52,6 +56,19 @@ const DEMO_ACCOUNTS = [
 function loginAs(key) {
   auth.loginAs(key)
   router.push('/')
+}
+
+async function login() {
+  loginError.value = ''
+  loggingIn.value = true
+  try {
+    await auth.login(form)
+    router.push('/')
+  } catch (error) {
+    loginError.value = error.response?.data?.message ?? error.message ?? 'Dang nhap that bai.'
+  } finally {
+    loggingIn.value = false
+  }
 }
 </script>
 
@@ -101,14 +118,29 @@ function loginAs(key) {
               <span class="login-logo-icon">R</span>
               <span class="login-logo-name">RGMS</span>
             </div>
-            <div class="login-badge">Mockup Mode</div>
+            <div class="login-badge">{{ auth.isMockMode ? 'Mockup Mode' : 'API Mode' }}</div>
           </div>
 
           <h2 class="login-title">Đăng nhập hệ thống</h2>
           <p class="login-sub">Chọn tài khoản demo để trải nghiệm từng vai trò</p>
 
+          <form v-if="!auth.isMockMode" class="real-login-form" @submit.prevent="login">
+            <div class="form-group">
+              <label class="form-label">Tài khoản</label>
+              <input v-model="form.username" class="form-input" type="text" autocomplete="username" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mật khẩu</label>
+              <input v-model="form.password" class="form-input" type="password" autocomplete="current-password" required />
+            </div>
+            <div v-if="loginError" class="alert alert-danger">{{ loginError }}</div>
+            <button class="btn btn-primary w-full" type="submit" :disabled="loggingIn">
+              {{ loggingIn ? 'Đang đăng nhập...' : 'Đăng nhập' }}
+            </button>
+          </form>
+
           <!-- Demo accounts -->
-          <div class="demo-accounts">
+          <div v-else class="demo-accounts">
             <button
               v-for="acc in DEMO_ACCOUNTS"
               :key="acc.key"
@@ -130,7 +162,7 @@ function loginAs(key) {
           </div>
 
           <!-- Note -->
-          <div class="login-note">
+          <div v-if="auth.isMockMode" class="login-note">
             <span class="note-icon"><Info :size="14" /></span>
             <span>Nhấn <kbd>F5</kbd> để reset toàn bộ dữ liệu về trạng thái ban đầu</span>
           </div>
@@ -307,6 +339,13 @@ function loginAs(key) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.real-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
   margin-bottom: var(--space-5);
 }
 

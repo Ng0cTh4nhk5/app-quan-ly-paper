@@ -89,6 +89,14 @@ function removeFile(index) {
 }
 
 async function submit() {
+  if (isOverDue.value) {
+    toastAdd({
+      severity: 'warning',
+      summary: 'Ho so da qua han bo sung',
+      detail: 'Vui long lien he P.NCKH de duoc mo lai han nop.',
+    })
+    return
+  }
   if (!form.moTaBoSung.trim()) return
   submitting.value = true
   try {
@@ -210,7 +218,7 @@ async function submit() {
             <button
               type="submit"
               class="btn btn-primary flex items-center gap-2"
-              :disabled="submitting || !form.moTaBoSung.trim()"
+              :disabled="submitting || isOverDue || !form.moTaBoSung.trim()"
             >
               <span v-if="submitting" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
               <Send v-else :size="16" />

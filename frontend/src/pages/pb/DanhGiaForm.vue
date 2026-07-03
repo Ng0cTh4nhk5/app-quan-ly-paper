@@ -14,6 +14,7 @@ const toast  = useToast()
 const dt         = ref(null)
 const loading    = ref(false)
 const submitting = ref(false)
+const canSubmit = ref(false)
 
 const form = ref({
   diemKhoaHoc: 70,
@@ -28,19 +29,42 @@ const DE_XUAT_OPTS = [
   { v: 'YEU_CAU_CHINH_SUA', l: 'Yêu cầu sửa', icon: Edit2 },
   { v: 'TU_CHOI', l: 'Từ chối', icon: XCircle }
 ]
+const MIN_NHAN_XET_LENGTH = 20
+const SCORE_CRITERIA = [
+  { key: 'diemKhoaHoc', label: 'Tính khoa học', weight: 0.4 },
+  { key: 'diemCongNghe', label: 'Tính công nghệ', weight: 0.3 },
+  { key: 'diemTinhKhaDung', label: 'Tính khả dụng', weight: 0.3 },
+]
 
 onMounted(async () => {
   loading.value = true
   try {
-    const res = await api.get(`/de-tai/${route.params.id}`)
+    const detailRes = await api.get(`/de-tai/${route.params.id}`)
+    const actionRes = await api.get(`/de-tai/${route.params.id}/can-actions`).catch(() => ({ data: null }))
+    canSubmit.value = actionRes.data?.nopKetQuaPB ?? detailRes.data?.trangThai === 'DANG_PHAN_BIEN'
+    if (!canSubmit.value) {
+      toast.add({ severity: 'warning', summary: 'De tai nay da duoc nop ket qua phan bien', life: 3000 })
+      router.push('/pb/de-tai')
+      return
+    }
+    const res = detailRes
     dt.value = res.data
   } finally { loading.value = false }
 })
 
 async function submit() {
+  if (!canSubmit.value) return
+  if (form.value.nhanXet.trim().length < MIN_NHAN_XET_LENGTH) {
+    toast.add({ severity: 'warning', summary: `Nhan xet can it nhat ${MIN_NHAN_XET_LENGTH} ky tu`, life: 3000 })
+    return
+  }
   submitting.value = true
   try {
-    await store.nopKetQua(route.params.id, form.value)
+    await store.nopKetQua(route.params.id, {
+      ...form.value,
+      ketQua: form.value.deXuat,
+      diemTong: totalScore.value,
+    })
     toast.add({ severity: 'success', summary: 'Đã nộp kết quả phản biện', life: 4000 })
     router.push('/pb/de-tai')
   } catch (e) {
@@ -49,8 +73,10 @@ async function submit() {
 }
 
 const totalScore = computed(() =>
-  Math.round((form.value.diemKhoaHoc + form.value.diemCongNghe + form.value.diemTinhKhaDung) / 3)
+  Math.round(SCORE_CRITERIA.reduce((sum, crit) => sum + form.value[crit.key] * crit.weight, 0))
 )
+
+const isNhanXetValid = computed(() => form.value.nhanXet.trim().length >= MIN_NHAN_XET_LENGTH)
 
 function scoreColor(s) {
   if (s >= 80) return 'var(--color-success)'
@@ -76,7 +102,7 @@ function scoreColor(s) {
         <p class="pb-name">{{ dt.tenDeTai }}</p>
         <dl class="info-list mt-3">
           <dt>Mã số</dt>    <dd class="mono">{{ dt.maSo }}</dd>
-          <dt>GV CN</dt>    <dd>{{ dt.giangVien?.hoTen }}</dd>
+          <dt>GV CN</dt>    <dd>{{ dt.giangVien?.hoTen ?? dt.chuNhiem }}</dd>
           <dt>Lĩnh vực</dt><dd>{{ dt.linhVuc || '—' }}</dd>
           <dt>Kỳ NCKH</dt> <dd>{{ dt.kyNckh }}</dd>
         </dl>
@@ -94,22 +120,24 @@ function scoreColor(s) {
             <div class="score-meter-value" :style="{ color: scoreColor(totalScore) }">
               {{ totalScore }}
             </div>
-            <div class="score-meter-label">Điểm trung bình</div>
+            <div class="score-meter-label">Điểm tổng có trọng số</div>
           </div>
 
           <!-- Criteria -->
-          <div v-for="(crit, key) in { diemKhoaHoc: 'Tính khoa học', diemCongNghe: 'Tính công nghệ', diemTinhKhaDung: 'Tính khả dụng' }"
-               :key="key" class="form-group">
-            <label class="form-label">{{ crit }} ({{ form[key] }}/100)</label>
-            <input type="range" v-model.number="form[key]" min="0" max="100" step="5"
-                   class="score-slider" :style="{ '--val': form[key] + '%' }" />
+          <div v-for="crit in SCORE_CRITERIA"
+               :key="crit.key" class="form-group">
+            <label class="form-label">{{ crit.label }} - trọng số {{ Math.round(crit.weight * 100) }}% ({{ form[crit.key] }}/100)</label>
+            <input type="range" v-model.number="form[crit.key]" min="0" max="100" step="5"
+                   class="score-slider" :style="{ '--val': form[crit.key] + '%' }" />
           </div>
 
           <!-- Nhận xét -->
           <div class="form-group">
-            <label class="form-label">Nhận xét chi tiết</label>
+            <label class="form-label">Nhận xét chi tiết <span class="required">*</span></label>
             <textarea v-model="form.nhanXet" class="form-textarea" rows="6"
+              :minlength="MIN_NHAN_XET_LENGTH"
               placeholder="Phân tích điểm mạnh, điểm yếu, và góc độ chuyên môn..."></textarea>
+            <span class="form-hint">Tối thiểu {{ MIN_NHAN_XET_LENGTH }} ký tự.</span>
           </div>
 
           <div class="form-group">
@@ -128,7 +156,7 @@ function scoreColor(s) {
 
           <div class="form-actions">
             <button type="button" class="btn btn-secondary" @click="router.back()">Hủy</button>
-            <button type="submit" class="btn btn-primary flex items-center gap-2" :disabled="submitting">
+            <button type="submit" class="btn btn-primary flex items-center gap-2" :disabled="submitting || !canSubmit || !isNhanXetValid">
               <span v-if="submitting" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
               <Send v-else :size="16" />
               <span>{{ submitting ? 'Đang nộp...' : 'Nộp kết quả' }}</span>
