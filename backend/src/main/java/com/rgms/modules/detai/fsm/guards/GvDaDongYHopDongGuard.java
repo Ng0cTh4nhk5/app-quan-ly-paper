@@ -25,7 +25,8 @@ public class GvDaDongYHopDongGuard implements TransitionGuard {
         var deTai = deTaiRepository.findById(deTaiId)
                 .orElseThrow(() -> new BusinessException("GUARD_NOT_FOUND", "Không tìm thấy đề tài."));
 
-        if (Boolean.FALSE.equals(deTai.getGvDaDongYHopDong())) {
+        // !Boolean.TRUE.equals(): xử lý cả null (chưa thiết lập) lẫn false (từ chối)
+        if (!Boolean.TRUE.equals(deTai.getGvDaDongYHopDong())) {
             throw new BusinessException("GUARD_GV_CHUA_DONG_Y_HD",
                     "Giảng viên chưa xác nhận đồng ý nội dung hợp đồng. " +
                     "Vui lòng đợi GV xem và đồng ý trước khi ký.");

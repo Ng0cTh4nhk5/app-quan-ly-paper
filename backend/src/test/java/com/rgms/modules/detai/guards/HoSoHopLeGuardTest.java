@@ -2,7 +2,6 @@ package com.rgms.modules.detai.guards;
 
 import com.rgms.exception.BusinessException;
 import com.rgms.modules.detai.entity.DeTai;
-import com.rgms.modules.detai.entity.PhanBienDeXuat;
 import com.rgms.modules.detai.fsm.guards.HoSoHopLeGuard;
 import com.rgms.modules.detai.repo.DeTaiRepository;
 import com.rgms.modules.detai.repo.PhanBienDeXuatRepository;
@@ -19,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -31,6 +29,8 @@ import static org.mockito.Mockito.when;
  *
  * Mỗi guard condition phải có 1 test positive (pass) + 1 test negative (fail).
  * Tham chiếu: sop-member-a.md DoD — "Mỗi guard có ít nhất 1 unit test positive + 1 test negative"
+ *
+ * Đã cập nhật: dùng Long ID thay UUID (theo BaseEntity @Id Long).
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("HoSoHopLeGuard — Guard kiểm tra hồ sơ hợp lệ trước khi GV gửi")
@@ -42,8 +42,9 @@ class HoSoHopLeGuardTest {
 
     @InjectMocks HoSoHopLeGuard guard;
 
-    private static final UUID DE_TAI_ID = UUID.randomUUID();
-    private static final UUID ACTOR_ID  = UUID.randomUUID();
+    // Dùng Long thay UUID — khớp với BaseEntity @Id Long
+    private static final Long DE_TAI_ID = 1L;
+    private static final Long ACTOR_ID  = 2L;
 
     private DeTai mockDeTai;
     private NguoiDung mockGv;
@@ -51,8 +52,8 @@ class HoSoHopLeGuardTest {
     @BeforeEach
     void setUp() {
         mockGv = new NguoiDung();
-        // Dùng reflection để set ID vì BaseEntity dùng @GeneratedValue
-        setId(mockGv, ACTOR_ID);
+        // BaseEntity có @Setter từ Lombok — set trực tiếp không cần reflection
+        mockGv.setId(ACTOR_ID);
 
         mockDeTai = new DeTai();
         mockDeTai.setStatus(TopicState.DRAFT);
@@ -80,7 +81,7 @@ class HoSoHopLeGuardTest {
         @DisplayName("NEGATIVE: state = CHO_PNCKH_XEM_XET → ném GUARD_WRONG_STATUS")
         void state_khongPhai_draft_fail() {
             mockDeTai.setStatus(TopicState.CHO_PNCKH_XEM_XET);
-            when(deTaiRepository.findByIdWithChuNhiem(DE_TAI_ID))
+            when(deTaiRepository.findById(DE_TAI_ID))
                     .thenReturn(Optional.of(mockDeTai));
 
             BusinessException ex = assertThrows(BusinessException.class,
@@ -109,8 +110,8 @@ class HoSoHopLeGuardTest {
         @Test
         @DisplayName("NEGATIVE: actor != chuNhiem → ném GUARD_IDOR")
         void actor_khongPhai_chuNhiem_fail() {
-            UUID khacId = UUID.randomUUID(); // actor khác với chủ nhiệm
-            when(deTaiRepository.findByIdWithChuNhiem(DE_TAI_ID))
+            Long khacId = 99L; // actor khác với chủ nhiệm
+            when(deTaiRepository.findById(DE_TAI_ID))
                     .thenReturn(Optional.of(mockDeTai));
 
             BusinessException ex = assertThrows(BusinessException.class,
@@ -139,9 +140,9 @@ class HoSoHopLeGuardTest {
         @Test
         @DisplayName("NEGATIVE: không có THUYET_MINH → ném GUARD_THIEU_THUYET_MINH")
         void khongCoThuyetMinh_fail() {
-            when(deTaiRepository.findByIdWithChuNhiem(DE_TAI_ID))
+            when(deTaiRepository.findById(DE_TAI_ID))
                     .thenReturn(Optional.of(mockDeTai));
-            when(taiLieuRepository.existsByDeTaiIdAndLoai(DE_TAI_ID, "THUYET_MINH"))
+            when(taiLieuRepository.existsByDeTaiIdAndLoaiFile(DE_TAI_ID, "THUYET_MINH"))
                     .thenReturn(false); // Không có thuyết minh
 
             BusinessException ex = assertThrows(BusinessException.class,
@@ -152,15 +153,15 @@ class HoSoHopLeGuardTest {
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // GUARD [4]: Phải có >= 2 người phản biện đề xuất
+    // GUARD [4]: Phải có >= 1 người phản biện đề xuất (MIN_PB_DE_XUAT = 1)
     // ──────────────────────────────────────────────────────────────────────────
 
     @Nested
-    @DisplayName("Guard [4]: >= 2 phản biện đề xuất")
+    @DisplayName("Guard [4]: >= 1 phản biện đề xuất")
     class PhanBienDeXuatGuardTests {
 
         @Test
-        @DisplayName("POSITIVE: >= 2 PB đề xuất → pass")
+        @DisplayName("POSITIVE: >= 1 PB đề xuất → pass")
         void duPhanBienDeXuat_pass() {
             givenValidSetup(); // setup mặc định đã có 2
 
@@ -168,31 +169,14 @@ class HoSoHopLeGuardTest {
         }
 
         @Test
-        @DisplayName("NEGATIVE: chỉ có 1 PB đề xuất → ném GUARD_THIEU_PHAN_BIEN")
-        void thieuPhanBienDeXuat_fail() {
-            when(deTaiRepository.findByIdWithChuNhiem(DE_TAI_ID))
-                    .thenReturn(Optional.of(mockDeTai));
-            when(taiLieuRepository.existsByDeTaiIdAndLoai(DE_TAI_ID, "THUYET_MINH"))
-                    .thenReturn(true);
-            when(phanBienDeXuatRepository.countByDeTaiId(DE_TAI_ID))
-                    .thenReturn(1L); // Chỉ có 1 (cần >= 2)
-
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> guard.check(DE_TAI_ID, ACTOR_ID));
-
-            assertThat(ex.getErrorCode()).isEqualTo("GUARD_THIEU_PHAN_BIEN");
-            assertThat(ex.getMessage()).contains("1");
-        }
-
-        @Test
         @DisplayName("NEGATIVE: không có PB đề xuất nào → ném GUARD_THIEU_PHAN_BIEN")
-        void khongCoPhanBienDeXuat_fail() {
-            when(deTaiRepository.findByIdWithChuNhiem(DE_TAI_ID))
+        void thieuPhanBienDeXuat_fail() {
+            when(deTaiRepository.findById(DE_TAI_ID))
                     .thenReturn(Optional.of(mockDeTai));
-            when(taiLieuRepository.existsByDeTaiIdAndLoai(DE_TAI_ID, "THUYET_MINH"))
+            when(taiLieuRepository.existsByDeTaiIdAndLoaiFile(DE_TAI_ID, "THUYET_MINH"))
                     .thenReturn(true);
             when(phanBienDeXuatRepository.countByDeTaiId(DE_TAI_ID))
-                    .thenReturn(0L);
+                    .thenReturn(0L); // Không có ai
 
             BusinessException ex = assertThrows(BusinessException.class,
                     () -> guard.check(DE_TAI_ID, ACTOR_ID));
@@ -219,22 +203,12 @@ class HoSoHopLeGuardTest {
 
     /** Setup mặc định: tất cả điều kiện hợp lệ */
     private void givenValidSetup() {
-        when(deTaiRepository.findByIdWithChuNhiem(DE_TAI_ID))
+        // Guard gọi findById (có @EntityGraph bao gồm chuNhiem)
+        when(deTaiRepository.findById(DE_TAI_ID))
                 .thenReturn(Optional.of(mockDeTai));
-        when(taiLieuRepository.existsByDeTaiIdAndLoai(DE_TAI_ID, "THUYET_MINH"))
+        when(taiLieuRepository.existsByDeTaiIdAndLoaiFile(DE_TAI_ID, "THUYET_MINH"))
                 .thenReturn(true);          // Có thuyết minh
         when(phanBienDeXuatRepository.countByDeTaiId(DE_TAI_ID))
-                .thenReturn(2L);            // Đủ >= 2 PB đề xuất
-    }
-
-    /** Dùng reflection để set UUID id trong BaseEntity (không có constructor nhận id) */
-    private void setId(Object entity, UUID id) {
-        try {
-            var field = com.rgms.shared.model.BaseEntity.class.getDeclaredField("id");
-            field.setAccessible(true);
-            field.set(entity, id);
-        } catch (Exception e) {
-            throw new RuntimeException("Không thể set id bằng reflection", e);
-        }
+                .thenReturn(2L);            // Đủ >= 1 PB đề xuất
     }
 }

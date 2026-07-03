@@ -21,12 +21,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 /**
  * FsmServiceTest — Unit test cho FsmService (sop-member-a.md Giai đoạn 4).
@@ -50,8 +50,9 @@ class FsmServiceTest {
 
     @InjectMocks FsmService fsmService;
 
-    private static final UUID DE_TAI_ID = UUID.randomUUID();
-    private static final UUID ACTOR_ID  = UUID.randomUUID();
+    // Dùng Long thay UUID — khớp với BaseEntity @Id Long
+    private static final Long DE_TAI_ID = 1L;
+    private static final Long ACTOR_ID  = 2L;
 
     private DeTai mockDeTai;
     private NguoiDung mockActor;
@@ -60,7 +61,7 @@ class FsmServiceTest {
     void setUp() {
         mockActor = new NguoiDung();
         mockActor.setHoTen("Test Actor");
-        mockActor.setRole(Role.PNCKH);
+        mockActor.setVaiTro("PNCKH");
 
         mockDeTai = new DeTai();
         mockDeTai.setTenDeTai("Đề tài test FSM");
@@ -72,10 +73,13 @@ class FsmServiceTest {
 
     private DeTai givenDeTaiAtState(TopicState state) {
         mockDeTai.setStatus(state);
-        when(deTaiRepository.findByIdWithChuNhiem(DE_TAI_ID))
+        // lenient(): guards run BEFORE findById() in transition(guards) overload.
+        // Terminal state tests exit before save()/findById(actor).
+        // Using lenient() prevents UnnecessaryStubbingException in all fail-fast scenarios.
+        lenient().when(deTaiRepository.findById(DE_TAI_ID))
                 .thenReturn(Optional.of(mockDeTai));
-        when(deTaiRepository.save(any(DeTai.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(nguoiDungRepository.findById(ACTOR_ID)).thenReturn(Optional.of(mockActor));
+        lenient().when(deTaiRepository.save(any(DeTai.class))).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(nguoiDungRepository.findById(ACTOR_ID)).thenReturn(Optional.of(mockActor));
         return mockDeTai;
     }
 
@@ -388,10 +392,10 @@ class FsmServiceTest {
         @Test
         @DisplayName("DeTai không tồn tại → FSM_NOT_FOUND")
         void deTaiKhongTonTai_nemException() {
-            when(deTaiRepository.findByIdWithChuNhiem(any())).thenReturn(Optional.empty());
+            when(deTaiRepository.findById(any())).thenReturn(Optional.empty());
 
             BusinessException ex = assertThrows(BusinessException.class,
-                    () -> fsmService.transition(UUID.randomUUID(), TopicEvent.GV_GUI_HO_SO, ACTOR_ID, List.of()));
+                    () -> fsmService.transition(999L, TopicEvent.GV_GUI_HO_SO, ACTOR_ID, List.of()));
 
             assertThat(ex.getErrorCode()).isEqualTo("FSM_NOT_FOUND");
         }

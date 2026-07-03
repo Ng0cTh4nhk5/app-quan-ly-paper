@@ -18,7 +18,6 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -65,7 +64,7 @@ class ResearchTopicIntegrationTest {
     void taoDeTai_withPNCKHRole_returns403() throws Exception {
         TaoDeTaiRequest req = new TaoDeTaiRequest();
         req.setTenDeTai("Đề tài test");
-        req.setKyNckhId(UUID.randomUUID());
+        req.setKyNckhId(1L);
 
         mockMvc.perform(post(API_BASE)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -77,7 +76,7 @@ class ResearchTopicIntegrationTest {
     @DisplayName("RBAC: POST /de-tai/{id}/tiep-nhan — GV gọi endpoint của PNCKH → 403 Forbidden")
     @WithMockUser(username = "00000000-0000-0000-0000-000000000002", roles = "GIANG_VIEN")
     void tiepNhan_withGVRole_returns403() throws Exception {
-        mockMvc.perform(post(API_BASE + "/" + UUID.randomUUID() + "/tiep-nhan"))
+        mockMvc.perform(post(API_BASE + "/999/tiep-nhan"))
                 .andExpect(status().isForbidden());
     }
 
@@ -85,7 +84,7 @@ class ResearchTopicIntegrationTest {
     @DisplayName("RBAC: POST /de-tai/{id}/lap-to-phan-bien — GV gọi endpoint của PNCKH → 403 Forbidden")
     @WithMockUser(username = "00000000-0000-0000-0000-000000000003", roles = "GIANG_VIEN")
     void lapToPhanBien_withGVRole_returns403() throws Exception {
-        mockMvc.perform(post(API_BASE + "/" + UUID.randomUUID() + "/lap-to-phan-bien")
+        mockMvc.perform(post(API_BASE + "/999/lap-to-phan-bien")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isForbidden());
@@ -95,7 +94,7 @@ class ResearchTopicIntegrationTest {
     @DisplayName("RBAC: POST /de-tai/{id}/ky-hop-dong — GV gọi endpoint của PNCKH → 403 Forbidden")
     @WithMockUser(username = "00000000-0000-0000-0000-000000000004", roles = "GIANG_VIEN")
     void kyHopDong_withGVRole_returns403() throws Exception {
-        mockMvc.perform(post(API_BASE + "/" + UUID.randomUUID() + "/ky-hop-dong"))
+        mockMvc.perform(post(API_BASE + "/999/ky-hop-dong"))
                 .andExpect(status().isForbidden());
     }
 
@@ -103,7 +102,7 @@ class ResearchTopicIntegrationTest {
     @DisplayName("RBAC: POST /de-tai/{id}/gv-dong-y-hop-dong — PNCKH gọi endpoint của GV → 403 Forbidden")
     @WithMockUser(username = "00000000-0000-0000-0000-000000000005", roles = "PNCKH")
     void gvDongYHopDong_withPNCKHRole_returns403() throws Exception {
-        mockMvc.perform(post(API_BASE + "/" + UUID.randomUUID() + "/gv-dong-y-hop-dong"))
+        mockMvc.perform(post(API_BASE + "/999/gv-dong-y-hop-dong"))
                 .andExpect(status().isForbidden());
     }
 
@@ -111,7 +110,7 @@ class ResearchTopicIntegrationTest {
     @DisplayName("RBAC: POST /de-tai/{id}/xet-duyet-pb — GV gọi endpoint của PNCKH → 403 Forbidden")
     @WithMockUser(username = "00000000-0000-0000-0000-000000000006", roles = "GIANG_VIEN")
     void xetDuyetPB_withGVRole_returns403() throws Exception {
-        mockMvc.perform(post(API_BASE + "/" + UUID.randomUUID() + "/xet-duyet-pb")
+        mockMvc.perform(post(API_BASE + "/999/xet-duyet-pb")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isForbidden());
@@ -140,7 +139,7 @@ class ResearchTopicIntegrationTest {
     void taoDeTai_missingTenDeTai_returns400() throws Exception {
         TaoDeTaiRequest req = new TaoDeTaiRequest();
         // Không set tenDeTai — @NotBlank sẽ trigger
-        req.setKyNckhId(UUID.randomUUID());
+        req.setKyNckhId(1L);
 
         mockMvc.perform(post(API_BASE)
                         .contentType(MediaType.APPLICATION_JSON)

@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -24,6 +23,8 @@ import static org.mockito.Mockito.when;
 /**
  * GvDaDongYHopDongGuardTest — Unit test cho guard ký hợp đồng.
  * DoD: 1 test positive + 1 test negative.
+ *
+ * Đã cập nhật: dùng Long ID thay UUID (theo BaseEntity @Id Long).
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GvDaDongYHopDongGuard — GV phải đồng ý HĐ trước khi ký")
@@ -32,8 +33,9 @@ class GvDaDongYHopDongGuardTest {
     @Mock DeTaiRepository deTaiRepository;
     @InjectMocks GvDaDongYHopDongGuard guard;
 
-    private static final UUID DE_TAI_ID = UUID.randomUUID();
-    private static final UUID ACTOR_ID  = UUID.randomUUID();
+    // Dùng Long thay UUID — khớp với BaseEntity @Id Long
+    private static final Long DE_TAI_ID = 1L;
+    private static final Long ACTOR_ID  = 2L;
 
     private DeTai mockDeTai;
 

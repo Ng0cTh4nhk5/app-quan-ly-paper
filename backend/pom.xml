@@ -142,11 +142,13 @@
                 <configuration>
                     <source>17</source>
                     <target>17</target>
+                    <!--
                     <testExcludes>
                         <testExclude>**/guards/*GuardTest.java</testExclude>
                         <testExclude>**/FsmServiceTest.java</testExclude>
                         <testExclude>**/ResearchTopicIntegrationTest.java</testExclude>
                     </testExcludes>
+                    -->
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>

@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -24,6 +23,12 @@ import static org.mockito.Mockito.when;
 /**
  * ChuNhiemGuardTest — Unit test.
  * DoD: 1 test positive + 1 test negative.
+ *
+ * Guard inject DeTaiRepository, gọi findById (có @EntityGraph chuNhiem).
+ * Ném "GUARD_NOT_FOUND" nếu đề tài không tồn tại,
+ * ném "GUARD_IDOR" nếu actor không phải chủ nhiệm.
+ *
+ * Đã cập nhật: dùng Long ID thay UUID (theo BaseEntity @Id Long).
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChuNhiemGuard — Chỉ chủ nhiệm mới được thao tác")
@@ -35,9 +40,10 @@ class ChuNhiemGuardTest {
     @InjectMocks
     private ChuNhiemGuard guard;
 
-    private static final UUID DE_TAI_ID = UUID.randomUUID();
-    private static final UUID CHU_NHIEM_ID = UUID.randomUUID();
-    private static final UUID NGUOI_KHAC_ID = UUID.randomUUID();
+    // Dùng Long thay UUID — khớp với BaseEntity @Id Long
+    private static final Long DE_TAI_ID    = 1L;
+    private static final Long CHU_NHIEM_ID = 2L;
+    private static final Long NGUOI_KHAC_ID = 99L;
 
     private DeTai mockDeTai;
     private NguoiDung mockChuNhiem;
@@ -45,7 +51,8 @@ class ChuNhiemGuardTest {
     @BeforeEach
     void setUp() {
         mockChuNhiem = new NguoiDung();
-        setId(mockChuNhiem, CHU_NHIEM_ID);
+        // BaseEntity có @Setter từ Lombok — set trực tiếp
+        mockChuNhiem.setId(CHU_NHIEM_ID);
 
         mockDeTai = new DeTai();
         mockDeTai.setChuNhiem(mockChuNhiem);
@@ -54,43 +61,34 @@ class ChuNhiemGuardTest {
     @Test
     @DisplayName("POSITIVE: actorId là chủ nhiệm đề tài → pass")
     void isChuNhiem_pass() {
-        when(deTaiRepository.findByIdWithChuNhiem(DE_TAI_ID))
+        when(deTaiRepository.findById(DE_TAI_ID))
                 .thenReturn(Optional.of(mockDeTai));
 
         assertDoesNotThrow(() -> guard.check(DE_TAI_ID, CHU_NHIEM_ID));
     }
 
     @Test
-    @DisplayName("NEGATIVE: actorId KHÔNG phải chủ nhiệm đề tài → ném GUARD_NOT_CHU_NHIEM")
+    @DisplayName("NEGATIVE: actorId KHÔNG phải chủ nhiệm đề tài → ném GUARD_IDOR")
     void notChuNhiem_fail() {
-        when(deTaiRepository.findByIdWithChuNhiem(DE_TAI_ID))
+        when(deTaiRepository.findById(DE_TAI_ID))
                 .thenReturn(Optional.of(mockDeTai));
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> guard.check(DE_TAI_ID, NGUOI_KHAC_ID));
 
-        assertThat(ex.getErrorCode()).isEqualTo("GUARD_NOT_CHU_NHIEM");
+        // ChuNhiemGuard ném "GUARD_IDOR" khi actor != chuNhiem
+        assertThat(ex.getErrorCode()).isEqualTo("GUARD_IDOR");
     }
 
     @Test
     @DisplayName("NEGATIVE: Đề tài không tồn tại → ném GUARD_NOT_FOUND")
     void detaiNotFound_fail() {
-        when(deTaiRepository.findByIdWithChuNhiem(DE_TAI_ID))
+        when(deTaiRepository.findById(DE_TAI_ID))
                 .thenReturn(Optional.empty());
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> guard.check(DE_TAI_ID, CHU_NHIEM_ID));
 
         assertThat(ex.getErrorCode()).isEqualTo("GUARD_NOT_FOUND");
-    }
-
-    private void setId(Object entity, UUID id) {
-        try {
-            var field = com.rgms.shared.model.BaseEntity.class.getDeclaredField("id");
-            field.setAccessible(true);
-            field.set(entity, id);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }
