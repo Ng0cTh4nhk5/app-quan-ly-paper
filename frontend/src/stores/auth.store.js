@@ -47,7 +47,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(credentials) {
     const res = await api.post('/auth/login', credentials)
     const nextToken = res.data?.token ?? res.data?.accessToken ?? res.data?.jwt
-    if (!nextToken) throw new Error('Dang nhap thanh cong nhung API khong tra ve token.')
+    if (!nextToken) throw new Error('Đăng nhập thành công nhưng API không trả về token.')
     token.value = nextToken
     localStorage.setItem('rgms_token', token.value)
     return user.value
@@ -55,7 +55,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Mock login — chọn role để test
   function loginAs(userKey) {
-    if (!isMockMode.value) throw new Error('loginAs chi dung cho mock mode.')
+    if (!isMockMode.value) throw new Error('loginAs chỉ dùng cho mock mode.')
     const u = MOCK_USERS[userKey]
     if (!u) return
     token.value = makeMockJWT(u)

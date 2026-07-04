@@ -15,7 +15,10 @@ export const EMPTY_SOP_D_ACTIONS = {
 }
 
 export function normalizeReviewDecision(value) {
-  const raw = value ?? 'CHAP_NHAN'
+  // FIXED(TL): Không default sang CHAP_NHAN khi value là null/undefined.
+  // Trả về null để caller tự handle, tránh bypass guard validateXetDuyetPB.
+  if (value == null) return null
+  const raw = String(value).trim()
   if (raw === 'CHAP_THUAN') return 'CHAP_NHAN'
   if (raw === 'CHO_CHINH_SUA' || raw === 'YEU_CAU_CHINH_SUA' || raw === 'YEU_CAU_SUA') return 'CAN_SUA'
   return raw
@@ -29,7 +32,8 @@ export const MAX_ADVANCE_RATE_PERCENT = 50
 export function normalizeContractStatus(dt) {
   if (!dt) return 'CHUA_SOAN'
   if (dt.hopDongStatus) return dt.hopDongStatus
-  if (dt.trangThai === 'DANG_THUC_HIEN') return 'DA_KY'
+  // FIXED(TL): Bổ sung case HOAN_TAT - trước đây trả về null gây lỗi guard.
+  if (dt.trangThai === 'DANG_THUC_HIEN' || dt.trangThai === 'HOAN_TAT') return 'DA_KY'
   if (dt.trangThai !== 'DANG_LAP_HOP_DONG') return null
   if (dt.gvDaDongYHopDong) return 'CHO_KY'
   if (dt.hopDongFeedback) return 'CAN_SUA'
@@ -80,7 +84,10 @@ export function canActionsFor(dt, user) {
     tuChoiHoSo: role === 'NCKH' && dt?.trangThai === 'DANG_XEM_XET_BOI_PNCKH',
     lapToPhanBien: role === 'NCKH' && dt?.trangThai === 'DANG_XEM_XET_BOI_PNCKH',
     nopKetQuaPB: role === 'TO_PHAN_BIEN' && dt?.trangThai === 'DANG_PHAN_BIEN' && Boolean(pb) && !pb.ketQua,
-    xetDuyetPB: role === 'NCKH' && dt?.trangThai === 'DANG_PHAN_BIEN',
+    // FIXED(TL): Thêm check dt.toPhanBien tồn tại - NCKH chỉ có thể xét duyệt
+    // khi tổ phản biện đã được lập và có ít nhất 1 thành viên.
+    xetDuyetPB: role === 'NCKH' && dt?.trangThai === 'DANG_PHAN_BIEN' &&
+      Array.isArray(dt?.toPhanBien) && dt.toPhanBien.length > 0,
     soanHopDong: role === 'NCKH' && dt?.trangThai === 'DANG_LAP_HOP_DONG' && CONTRACT_DRAFTABLE_STATUSES.includes(contractStatus),
     kyHopDong: role === 'NCKH' && dt?.trangThai === 'DANG_LAP_HOP_DONG' && contractStatus === 'CHO_KY' && dt?.gvDaDongYHopDong === true && !hasContractFeedback,
     dongYHopDong: role === 'GIANG_VIEN' && isOwner && dt?.trangThai === 'DANG_LAP_HOP_DONG' && CONTRACT_REVIEWABLE_STATUSES.includes(contractStatus) && !dt?.gvDaDongYHopDong && !hasContractFeedback,

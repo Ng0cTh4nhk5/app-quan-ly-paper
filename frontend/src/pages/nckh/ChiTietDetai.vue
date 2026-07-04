@@ -289,7 +289,8 @@ function fmtM(n) {
         <AlertCircle :size="18" /> Đề tài đang ở trạng thái kết thúc. Màn hình chỉ hiển thị thông tin và lịch sử xử lý.
       </div>
 
-      <section v-if="chiTiet.trangThai === 'DANG_LAP_HOP_DONG' || chiTiet.trangThai === 'DANG_THUC_HIEN'" class="contract-status-card mb-4">
+      <!-- FIXED(TL): Bổ sung HOAN_TAT để hiển thị thập hợp đồng cả khi đề tài đã hoàn tất -->
+      <section v-if="['DANG_LAP_HOP_DONG', 'DANG_THUC_HIEN', 'HOAN_TAT'].includes(chiTiet.trangThai)" class="contract-status-card mb-4">
         <div class="contract-status-main">
           <span class="contract-status-icon"><FileText :size="18" /></span>
           <div>
@@ -437,7 +438,7 @@ function fmtM(n) {
       <div v-if="showTuChoiDialog" class="dialog-overlay" @click.self="!actionLoading.tuChoiHoSo && (showTuChoiDialog = false)">
         <div class="dialog">
           <div class="dialog-header">
-            <h3>Từ chối hồ sơ sơ thẩm</h3>
+            <h3>Từ chối hồ sơ thẩm</h3>
             <button class="dialog-close btn btn-ghost btn-sm" :disabled="actionLoading.tuChoiHoSo" @click="showTuChoiDialog = false"><X :size="18" /></button>
           </div>
           <div class="dialog-body">

@@ -31,7 +31,9 @@ function fallbackActions(dt) {
     yeuCauBoSung: dt?.trangThai === 'DANG_XEM_XET_BOI_PNCKH',
     tuChoiHoSo: dt?.trangThai === 'DANG_XEM_XET_BOI_PNCKH',
     lapToPhanBien: dt?.trangThai === 'DANG_XEM_XET_BOI_PNCKH',
-    xetDuyetPB: dt?.trangThai === 'DANG_PHAN_BIEN',
+    // FIXED(TL): Sync với guard xetDuyetPB - phải check tổ phản biện đã được lập
+    xetDuyetPB: dt?.trangThai === 'DANG_PHAN_BIEN' &&
+      Array.isArray(dt?.toPhanBien) && dt.toPhanBien.length > 0,
     soanHopDong: dt?.trangThai === 'DANG_LAP_HOP_DONG' && CONTRACT_DRAFTABLE_STATUSES.includes(contractStatus),
     kyHopDong: dt?.trangThai === 'DANG_LAP_HOP_DONG' && contractStatus === 'CHO_KY' && dt?.gvDaDongYHopDong === true && !hasContractFeedback,
   }
@@ -200,7 +202,9 @@ export const useNckhStore = defineStore('nckh', () => {
         kinhPhi: payload.kinhPhi,
         ngayBatDau: payload.ngayBatDau ?? today.toISOString().slice(0, 10),
         ngayKetThuc: payload.ngayKetThuc ?? end.toISOString().slice(0, 10),
-        tyLeTamUng: payload.tyLeTamUng ?? 0.5,
+        // FIXED(TL): Default 0 thay vì 0.5. Việc chọn tỷ lệ tạm ứng là quyết định
+        // của người soạn hợp đồng, không nên auto-default 50%.
+        tyLeTamUng: payload.tyLeTamUng ?? 0,
       }
       const url = isRealApi ? `/de-tai/${id}/soan-hop-dong` : `/de-tai/${id}/hop-dong/soan`
       const res = await api.post(url, isRealApi ? realPayload : payload)
@@ -231,9 +235,11 @@ export const useNckhStore = defineStore('nckh', () => {
 
   function _sync(id, updated) {
     chiTiet.value = updated
-    const numericId = parseInt(id)
+    // FIXED(TL): Compare ID dưới dạng string thay vì parseInt.
+    // Backend dùng Long (64-bit) có thể vượt Number.MAX_SAFE_INTEGER.
+    const strId = String(id)
     const syncOne = list => {
-      const idx = list.value.findIndex(d => d.id === numericId)
+      const idx = list.value.findIndex(d => String(d.id) === strId)
       if (idx !== -1) list.value[idx] = updated
     }
     syncOne(inbox)

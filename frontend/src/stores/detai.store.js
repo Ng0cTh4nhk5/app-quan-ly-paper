@@ -62,7 +62,7 @@ export const useDetaiStore = defineStore('detai', () => {
     } catch (e) {
       chiTiet.value = null
       canActions.value = { ...EMPTY_ACTIONS }
-      error.value = e.response?.data?.message ?? 'Khong the tai chi tiet de tai.'
+      error.value = e.response?.data?.message ?? 'Không thể tải chi tiết đề tài.'
       throw e
     } finally { loading.value = false }
   }
@@ -158,9 +158,11 @@ export const useDetaiStore = defineStore('detai', () => {
   }
 
   function _sync(id, updated) {
-    const idx = danhSach.value.findIndex(d => d.id === parseInt(id))
+    // FIXED(TL): Dùng String() thay vì parseInt để tránh Long ID overflow.
+    const strId = String(id)
+    const idx = danhSach.value.findIndex(d => String(d.id) === strId)
     if (idx !== -1) danhSach.value[idx] = updated
-    if (chiTiet.value?.id === parseInt(id)) chiTiet.value = updated
+    if (String(chiTiet.value?.id) === strId) chiTiet.value = updated
   }
 
   return {

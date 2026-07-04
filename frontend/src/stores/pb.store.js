@@ -67,7 +67,8 @@ export const usePBStore = defineStore('pb', () => {
       nhanXet: payload.nhanXet,
     }
     const res = await api.post(`/de-tai/${detaiId}/nop-ket-qua-pb`, isRealApi ? realPayload : payload)
-    danhSachAssigned.value = danhSachAssigned.value.filter(d => d.id !== parseInt(detaiId))
+    // FIXED(TL): Dùng String() thay vì parseInt để tránh Long ID overflow.
+    danhSachAssigned.value = danhSachAssigned.value.filter(d => String(d.id) !== String(detaiId))
     chiTiet.value = res.data
     await layCanActions(detaiId)
     return res.data

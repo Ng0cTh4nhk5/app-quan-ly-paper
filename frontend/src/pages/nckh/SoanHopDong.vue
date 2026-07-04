@@ -24,7 +24,8 @@ const form = ref({
   kinhPhi: null,
   ngayBatDau: '',
   ngayKetThuc: '',
-  tyLeTamUng: 50,
+  // FIXED(TL): Default 0 thay vì 50 để tránh auto-select 50% khi soạn mới.
+  tyLeTamUng: 0,
   ghiChu: '',
 })
 
@@ -105,7 +106,8 @@ onMounted(async () => {
       form.value.ngayBatDau = chiTiet.value.ngayBatDau ?? ''
       originalNgayBatDau.value = chiTiet.value.ngayBatDau ?? ''
       form.value.ngayKetThuc = chiTiet.value.ngayKetThuc ?? ''
-      const savedRate = Number(chiTiet.value.tyLeTamUng ?? MAX_ADVANCE_RATE_PERCENT)
+      // FIXED(TL): Fallback về 0 thay vì MAX_ADVANCE_RATE_PERCENT khi chưa có dữ liệu tỷ lệ tạm ứng.
+      const savedRate = Number(chiTiet.value.tyLeTamUng ?? 0)
       form.value.tyLeTamUng = savedRate <= 1 ? savedRate * 100 : savedRate
       form.value.ghiChu = chiTiet.value.ghiChuHopDong ?? ''
     }

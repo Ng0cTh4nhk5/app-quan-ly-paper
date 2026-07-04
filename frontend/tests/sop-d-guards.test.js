@@ -129,6 +129,12 @@ test('review decision aliases normalize to current SOP D enum', () => {
   assert.equal(normalizeReviewDecision('YEU_CAU_CHINH_SUA'), 'CAN_SUA')
   assert.equal(normalizeReviewDecision('YEU_CAU_SUA'), 'CAN_SUA')
   assert.equal(normalizeReviewDecision('TU_CHOI'), 'TU_CHOI')
+  // FIXED(TL): null/undefined phải trả về null, không default sang CHAP_NHAN
+  assert.equal(normalizeReviewDecision(null), null)
+  assert.equal(normalizeReviewDecision(undefined), null)
+  // FIXED(TL): normalizeContractStatus bổ sung case HOAN_TAT
+  assert.equal(normalizeContractStatus({ trangThai: 'HOAN_TAT' }), 'DA_KY')
+  assert.equal(normalizeContractStatus({ trangThai: 'DANG_THUC_HIEN' }), 'DA_KY')
 })
 
 test('NCKH dialog validations enforce required SOP D fields', () => {
