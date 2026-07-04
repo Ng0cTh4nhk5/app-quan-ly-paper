@@ -3,6 +3,7 @@ import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDetaiStore } from '@/stores/detai.store'
+import { useToast } from '@/composables/useToast'
 import { validateThuyetMinhFile } from '@/utils/uploadValidation'
 import StatusBadge from '@/components/StatusBadge.vue'
 import {
@@ -24,24 +25,29 @@ import {
 const route = useRoute()
 const router = useRouter()
 const store = useDetaiStore()
-const { chiTiet, loading, error } = storeToRefs(store)
+const toast = useToast()
+const { chiTiet, loading, error, canActions, actionLoading } = storeToRefs(store)
 
-const toast = ref(null)
-const isLoading = ref(false)
 const uploading = ref(false)
+const supportsDocumentDelete = !import.meta.env.VITE_API_URL
 
-onMounted(() => store.layChiTiet(route.params.id).catch(() => {}))
+onMounted(async () => {
+  try {
+    await store.layChiTiet(route.params.id)
+    await store.layCanActions(route.params.id)
+  } catch {}
+})
 
-const canGuiHoSo = computed(() =>
+const canEditSubmission = computed(() =>
   ['DRAFT', 'CHO_CHINH_SUA_THUYET_MINH'].includes(chiTiet.value?.trangThai)
 )
-const canXoaTaiLieuPreview = computed(() => chiTiet.value?.trangThai === 'DRAFT')
-const canBoSung = computed(() => chiTiet.value?.trangThai === 'CHO_BO_SUNG_HO_SO')
-const canXemHopDong = computed(() =>
-  ['DANG_LAP_HOP_DONG', 'DANG_THUC_HIEN', 'HOAN_TAT'].includes(chiTiet.value?.trangThai)
-)
+const canUploadThuyetMinh = canEditSubmission
+const canGuiHoSo = computed(() => canActions.value.guiHoSo)
+const canXoaTaiLieuPreview = computed(() => canActions.value.xoaTaiLieu)
+const canBoSung = computed(() => canActions.value.boSungHoSo)
+const canXemHopDong = computed(() => canActions.value.xemHopDong)
 const taiLieu = computed(() => chiTiet.value?.taiLieu ?? [])
-const auditItems = computed(() => chiTiet.value?.auditLog ?? chiTiet.value?.lichSu ?? [])
+const auditItems = computed(() => chiTiet.value?.auditLog ?? [])
 const hasThuyetMinh = computed(() => taiLieu.value.some(t => t.loai === 'THUYET_MINH'))
 
 const STEPS = [
@@ -55,8 +61,11 @@ const STEPS = [
 const STATUS_ORDER = STEPS.map(s => s.key)
 
 function showToast(type, msg) {
-  toast.value = { type, msg }
-  setTimeout(() => { toast.value = null }, 4000)
+  toast.add({
+    severity: type === 'success' ? 'success' : 'error',
+    summary: type === 'success' ? 'Thành công' : 'Lỗi',
+    detail: msg,
+  })
 }
 
 function fmt(iso, full = false) {
@@ -86,13 +95,10 @@ async function guiHoSo() {
     return
   }
   try {
-    isLoading.value = true
     await store.guiHoSo(route.params.id)
     showToast('success', 'Hồ sơ đã được gửi tới P.NCKH để xét duyệt.')
   } catch (e) {
     showToast('error', e.response?.data?.message ?? 'Không thể gửi hồ sơ.')
-  } finally {
-    isLoading.value = false
   }
 }
 
@@ -126,9 +132,9 @@ async function onUploadThuyetMinh(event) {
 async function xoaTaiLieu(taiLieuId) {
   try {
     await store.xoaTaiLieu(route.params.id, taiLieuId)
-    showToast('success', 'Da xoa tai lieu khoi ban nhap.')
+    showToast('success', 'Đã xóa tài liệu khỏi bản nháp.')
   } catch (e) {
-    showToast('error', e.response?.data?.message ?? 'Khong the xoa tai lieu.')
+    showToast('error', e.response?.data?.message ?? 'Không thể xóa tài liệu.')
   }
 }
 </script>
@@ -136,12 +142,6 @@ async function xoaTaiLieu(taiLieuId) {
 <template>
   <div>
     <button class="btn btn-ghost btn-sm mb-4" @click="router.back()">← Quay lại danh sách</button>
-
-    <div v-if="toast" class="inline-toast flex items-center gap-2" :class="toast.type">
-      <CheckCircle v-if="toast.type === 'success'" :size="16" />
-      <XCircle v-else :size="16" />
-      <span>{{ toast.msg }}</span>
-    </div>
 
     <div v-if="loading" class="detail-loading">
       <div class="skeleton" style="height: 48px; border-radius: 8px"></div>
@@ -179,18 +179,18 @@ async function xoaTaiLieu(taiLieuId) {
             <FileText :size="16" /> Xem hợp đồng
           </button>
           <button
-            v-if="canGuiHoSo"
+            v-if="canUploadThuyetMinh"
             class="btn btn-primary flex items-center gap-2"
-            :disabled="isLoading || !hasThuyetMinh"
+            :disabled="actionLoading.guiHoSo || !canGuiHoSo"
             @click="guiHoSo"
           >
-            <span v-if="isLoading" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
+            <span v-if="actionLoading.guiHoSo" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
             <Send v-else :size="16" /> Gửi hồ sơ tới P.NCKH
           </button>
         </div>
       </div>
 
-      <div v-if="canGuiHoSo && !hasThuyetMinh" class="warning-banner mb-4 flex gap-3">
+      <div v-if="canEditSubmission && !hasThuyetMinh" class="warning-banner mb-4 flex gap-3">
         <AlertTriangle class="shrink-0" :size="20" />
         <div>
           <strong>Cần bản thuyết minh:</strong> Tải lên file PDF hoặc DOCX trước khi gửi hồ sơ.
@@ -246,7 +246,7 @@ async function xoaTaiLieu(taiLieuId) {
               <h3 class="card-title">Thuyết minh & tài liệu</h3>
             </div>
             <div class="card-body">
-              <div v-if="canGuiHoSo" class="upload-panel mb-4">
+              <div v-if="canEditSubmission" class="upload-panel mb-4">
                 <div>
                   <div class="upload-title">Bản thuyết minh đề tài</div>
                   <p class="upload-desc">Tải lên file PDF hoặc DOCX, tối đa 20MB/file trước khi gửi hồ sơ.</p>
@@ -353,9 +353,9 @@ async function xoaTaiLieu(taiLieuId) {
             </div>
             <div class="card-body sidebar-actions">
               <button
-                v-if="canGuiHoSo"
+                v-if="canUploadThuyetMinh"
                 class="btn btn-primary w-full flex items-center justify-center gap-2"
-                :disabled="isLoading || !hasThuyetMinh"
+                :disabled="actionLoading.guiHoSo || !canGuiHoSo"
                 @click="guiHoSo"
               >
                 <Send :size="16" /> Gửi hồ sơ tới P.NCKH
@@ -393,25 +393,6 @@ async function xoaTaiLieu(taiLieuId) {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.inline-toast {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  font: var(--text-body);
-  margin-bottom: var(--space-4);
-}
-
-.inline-toast.success {
-  background: var(--color-success-bg);
-  color: var(--color-success-text);
-  border: 1px solid var(--color-success-border);
-}
-
-.inline-toast.error {
-  background: var(--color-error-bg);
-  color: var(--color-error-text);
-  border: 1px solid var(--color-error-border);
 }
 
 .detail-main,

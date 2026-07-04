@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import api from '@/api/axios'
 
 const routes = [
   { path: '/', redirect: () => {
@@ -24,9 +25,9 @@ const routes = [
       { path: 'dashboard',      component: () => import('@/pages/gv/Dashboard.vue') },
       { path: 'de-tai',         component: () => import('@/pages/gv/DanhSachDetai.vue') },
       { path: 'de-tai/tao-moi', component: () => import('@/pages/gv/TaoDetai.vue') },
-      { path: 'de-tai/:id',     component: () => import('@/pages/gv/ChiTietDetai.vue') },
-      { path: 'de-tai/:id/bo-sung',  component: () => import('@/pages/gv/BoSungHoSo.vue') },
-      { path: 'de-tai/:id/hop-dong', component: () => import('@/pages/gv/XemHopDong.vue') },
+      { path: 'de-tai/:id',     component: () => import('@/pages/gv/ChiTietDetai.vue'), meta: { checkGvOwner: true } },
+      { path: 'de-tai/:id/bo-sung',  component: () => import('@/pages/gv/BoSungHoSo.vue'), meta: { checkGvOwner: true } },
+      { path: 'de-tai/:id/hop-dong', component: () => import('@/pages/gv/XemHopDong.vue'), meta: { checkGvOwner: true } },
     ]
   },
 
@@ -64,12 +65,21 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
   const required = to.meta.requiresRole
   if (!required) return true
   if (!auth.isLoggedIn) return '/login'
   if (auth.role !== required) return '/forbidden'
+  if (to.meta.checkGvOwner && to.params.id) {
+    try {
+      await api.get(`/de-tai/${to.params.id}`)
+    } catch (e) {
+      if (e.response?.status === 403) return '/forbidden'
+      if (e.response?.status === 404) return '/forbidden'
+      return false
+    }
+  }
   return true
 })
 

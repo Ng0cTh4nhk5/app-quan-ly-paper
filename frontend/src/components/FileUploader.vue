@@ -1,6 +1,7 @@
 ﻿<script setup>
 import { ref } from 'vue'
 import { FileText, FileBadge2, File, Download, X, UploadCloud } from '@lucide/vue'
+import { useToast } from '@/composables/useToast'
 const emit = defineEmits(['upload', 'remove'])
 
 const props = defineProps({
@@ -11,11 +12,16 @@ const props = defineProps({
 })
 
 const isDragging = ref(false)
+const toast = useToast()
 
 function handleFiles(rawFiles) {
   for (const f of rawFiles) {
     if (f.size > props.maxMb * 1024 * 1024) {
-      alert(`File "${f.name}" vượt quá ${props.maxMb}MB`)
+      toast.add({
+        severity: 'warning',
+        summary: 'File quá dung lượng',
+        detail: `File "${f.name}" vượt quá ${props.maxMb}MB`,
+      })
       continue
     }
     emit('upload', f)

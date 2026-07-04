@@ -226,6 +226,12 @@ a:hover { color: var(--color-accent-hover); }
 .btn-danger  { background: var(--color-danger); color: #fff; }
 .btn-danger:hover { background: var(--color-danger-hover); color: #fff; }
 
+.btn-success { background: var(--color-success-text); color: #fff; }
+.btn-success:hover { background: color-mix(in srgb, var(--color-success-text) 88%, #000); color: #fff; }
+
+.btn-warning { background: var(--color-warning-text); color: #fff; }
+.btn-warning:hover { background: color-mix(in srgb, var(--color-warning-text) 88%, #000); color: #fff; }
+
 .btn-ghost   { background: transparent; color: var(--color-text-secondary); }
 .btn-ghost:hover { background: var(--color-surface-alt); color: var(--color-text-primary); }
 
