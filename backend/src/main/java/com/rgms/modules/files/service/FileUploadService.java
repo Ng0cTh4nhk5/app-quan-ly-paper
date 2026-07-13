@@ -9,6 +9,7 @@ import com.rgms.modules.files.entity.TaiLieu;
 import com.rgms.modules.files.repo.TaiLieuRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -28,6 +29,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.UUID; // UUID.randomUUID() — chỉ dùng để tạo tên file vật lý, không phải DB ID
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileUploadService {
@@ -192,6 +194,35 @@ public class FileUploadService {
             throw new BusinessException("Tên file không hợp lệ.", HttpStatus.BAD_REQUEST);
         }
         return cleaned;
+    }
+
+    @Transactional
+    public void xoaTaiLieu(Long taiLieuId, Long userId) {
+        TaiLieu taiLieu = taiLieuRepository.findById(taiLieuId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tài liệu", "id", taiLieuId));
+        DeTai deTai = deTaiRepository.findById(taiLieu.getDeTaiId())
+                .orElseThrow(() -> new ResourceNotFoundException("Đề tài", "id", taiLieu.getDeTaiId()));
+
+        // Guard: chỉ chủ nhiệm mới được xóa
+        if (deTai.getChuNhiem() == null || !deTai.getChuNhiem().getId().equals(userId)) {
+            throw new BusinessException("Bạn không có quyền xóa tài liệu này.", HttpStatus.FORBIDDEN);
+        }
+        // Guard: chỉ xóa khi DRAFT
+        if (deTai.getStatus() != TopicState.DRAFT) {
+            throw new BusinessException(
+                    "Không thể xóa tài liệu ở trạng thái " + deTai.getStatus() + ".",
+                    HttpStatus.CONFLICT);
+        }
+
+        // Xóa file vật lý (best-effort)
+        try {
+            Path filePath = Paths.get(taiLieu.getFilePath()).toAbsolutePath().normalize();
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            log.warn("Không thể xóa file vật lý: {}", taiLieu.getFilePath(), e);
+        }
+
+        taiLieuRepository.delete(taiLieu);
     }
 
     @Getter

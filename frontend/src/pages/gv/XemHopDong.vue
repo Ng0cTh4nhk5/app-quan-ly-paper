@@ -9,7 +9,7 @@ import {
   CONTRACT_REVIEWABLE_STATUSES,
   hasOpenContractFeedback,
   normalizeContractStatus,
-} from '@/mock/sopDGuards'
+} from '@/utils/sopDGuards'
 import { AlertTriangle, ArrowLeft, Check, CheckCircle2, FileText, Hourglass, MessageSquareText, PenTool, Printer, X } from '@lucide/vue'
 
 const route = useRoute()

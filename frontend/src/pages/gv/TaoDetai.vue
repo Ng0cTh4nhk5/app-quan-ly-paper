@@ -1,14 +1,24 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDetaiStore } from '@/stores/detai.store'
 import { useToast } from '@/composables/useToast'
-import { KY_NCKH_LIST } from '@/mock/db.js'
+import api from '@/api/axios'
 
 const router    = useRouter()
 const store     = useDetaiStore()
 const toast     = useToast()
 const submitting = ref(false)
+const kyNckhList = ref([])
+
+onMounted(async () => {
+  try {
+    const res = await api.get('/ky-nckh')
+    kyNckhList.value = Array.isArray(res.data) ? res.data : (res.data?.content ?? [])
+  } catch {
+    kyNckhList.value = []
+  }
+})
 
 const form = reactive({ tenDeTai: '', linhVuc: '', kyNckhId: '', moTa: '' })
 const errors = reactive({ tenDeTai: '', kyNckhId: '' })
@@ -87,7 +97,7 @@ async function submit() {
               class="form-select" :class="{ 'is-error': errors.kyNckhId }"
             >
               <option value="">— Chọn kỳ —</option>
-              <option v-for="k in KY_NCKH_LIST" :key="k.id" :value="k.id">{{ k.ten }}</option>
+              <option v-for="k in kyNckhList" :key="k.id" :value="k.id">{{ k.ten }}</option>
             </select>
             <span v-if="errors.kyNckhId" class="form-error">{{ errors.kyNckhId }}</span>
           </div>

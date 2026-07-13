@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed } from 'vue'
 import { Check, X } from '@lucide/vue'
 const props = defineProps({
@@ -11,9 +11,9 @@ const allOk = computed(() => props.checks.every(c => c.ok))
 <template>
   <div class="checklist">
     <div class="checklist-header">
-      <span class="checklist-title">Điều kiện nộp hồ sơ</span>
+      <span class="checklist-title">�i?u ki?n n?p h? so</span>
       <span :class="['checklist-status', allOk ? 'ok' : 'fail']">
-        {{ allOk ? 'Đã đủ điều kiện' : 'Chưa đủ điều kiện' }}
+        {{ allOk ? '�� d? di?u ki?n' : 'Chua d? di?u ki?n' }}
       </span>
     </div>
     <ul class="checklist-list">

@@ -21,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -92,5 +93,26 @@ public class FileController {
                 .contentType(downloadFile.getMediaType())
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
                 .body(downloadFile.getResource());
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('GIANG_VIEN')")
+    @Operation(
+            summary = "Xóa tài liệu đính kèm",
+            description = "Xóa tài liệu đính kèm của đề tài. Chỉ cho phép khi đề tài ở trạng thái DRAFT và người gọi là chủ nhiệm đề tài. File vật lý cũng được xóa."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Xóa tài liệu thành công"),
+            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập hoặc token không hợp lệ"),
+            @ApiResponse(responseCode = "403", description = "Không phải chủ nhiệm đề tài"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy tài liệu"),
+            @ApiResponse(responseCode = "409", description = "Đề tài không ở trạng thái DRAFT")
+    })
+    public ResponseEntity<Void> xoaTaiLieu(
+            @Parameter(description = "ID tài liệu cần xóa", required = true)
+            @PathVariable Long id,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails currentUser) {
+        fileUploadService.xoaTaiLieu(id, currentUser.getId());
+        return ResponseEntity.noContent().build();
     }
 }

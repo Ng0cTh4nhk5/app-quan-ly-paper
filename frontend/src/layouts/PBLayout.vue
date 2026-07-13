@@ -49,9 +49,13 @@ function logout() { auth.logout(); router.push('/login') }
     <!-- ── SIDEBAR ────────────────────────────────── -->
     <aside class="sidebar" :class="{ 'is-open': isMobileMenuOpen }">
       <div class="sidebar-logo">
-        <div class="logo-mark">P</div>
+        <img
+          src="/logo.png"
+          alt="Trường Đại học Mở TP. Hồ Chí Minh"
+          class="logo-image"
+        />
         <div class="logo-text">
-          <span class="logo-name">RGMS</span>
+          <span class="logo-name">QLNCKH</span>
           <span class="logo-desc">Tổ Phản Biện</span>
         </div>
       </div>
@@ -118,14 +122,11 @@ function logout() { auth.logout(); router.push('/login') }
   flex-shrink: 0;
   min-height: var(--topbar-height);
 }
-.logo-mark {
-  width: 32px; height: 32px;
-  background: var(--color-accent);
-  border-radius: var(--radius-md);
-  display: flex; align-items: center; justify-content: center;
-  font: 700 16px/1 var(--font-sans);
-  color: #fff;
+.logo-image {
+  height: 40px;
+  width: auto;
   flex-shrink: 0;
+  display: block;
 }
 .logo-text { display: flex; flex-direction: column; }
 .logo-name { font: 700 14px/1 var(--font-sans); color: #fff; }

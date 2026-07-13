@@ -1,17 +1,17 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useNckhStore } from '@/stores/nckh.store'
 import { useToast } from '@/composables/useToast'
-import { MOCK_USERS } from '@/mock/db.js'
+import api from '@/api/axios'
 import StatusBadge from '@/components/StatusBadge.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import {
   allPbSubmitted as areAllPbSubmitted,
   hasOpenContractFeedback,
   normalizeContractStatus,
-} from '@/mock/sopDGuards'
+} from '@/utils/sopDGuards'
 import {
   AlertCircle,
   ArrowLeft,
@@ -54,8 +54,20 @@ onMounted(async () => {
   }
 })
 
+const pbMembers = ref([])
 
-const pbMembers = Object.values(MOCK_USERS).filter(u => u.role === 'TO_PHAN_BIEN')
+// Lazy-load danh sách phản biện từ API khi mở dialog lập tổ PB
+watch(showPBDialog, async (v) => {
+  if (v && !pbMembers.value.length) {
+    try {
+      const res = await api.get('/users')
+      const list = Array.isArray(res.data) ? res.data : (res.data?.content ?? [])
+      pbMembers.value = list.filter(u => u.role === 'TO_PHAN_BIEN')
+    } catch {
+      pbMembers.value = []
+    }
+  }
+})
 const terminalState = computed(() => ['BI_TU_CHOI', 'DANG_THUC_HIEN', 'HOAN_TAT', 'DA_HUY', 'DA_RUT'].includes(chiTiet.value?.trangThai))
 const chuNhiemName = computed(() => chiTiet.value?.giangVien?.hoTen ?? chiTiet.value?.chuNhiem ?? '---')
 const pbResults = computed(() => chiTiet.value?.toPhanBien ?? [])

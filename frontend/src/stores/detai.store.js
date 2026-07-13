@@ -6,11 +6,12 @@ import {
   enforceContractActionGuards,
   hasOpenContractFeedback,
   normalizeContractStatus,
-} from '@/mock/sopDGuards'
+} from '@/utils/sopDGuards'
 
 const EMPTY_ACTIONS = {
   guiHoSo: false,
   boSungHoSo: false,
+  nopLaiThuyetMinh: false,
   xoaTaiLieu: false,
   xemHopDong: false,
   dongYHopDong: false,
@@ -24,13 +25,12 @@ function fallbackActions(dt) {
     ...EMPTY_ACTIONS,
     guiHoSo: ['DRAFT', 'CHO_CHINH_SUA_THUYET_MINH'].includes(dt?.trangThai) && hasThuyetMinh,
     boSungHoSo: dt?.trangThai === 'CHO_BO_SUNG_HO_SO',
+    nopLaiThuyetMinh: dt?.trangThai === 'CHO_CHINH_SUA_THUYET_MINH' && hasThuyetMinh,
     xoaTaiLieu: dt?.trangThai === 'DRAFT',
     xemHopDong: ['DANG_LAP_HOP_DONG', 'DANG_THUC_HIEN', 'HOAN_TAT'].includes(dt?.trangThai),
     dongYHopDong: dt?.trangThai === 'DANG_LAP_HOP_DONG' && CONTRACT_REVIEWABLE_STATUSES.includes(contractStatus) && !dt?.gvDaDongYHopDong && !hasContractFeedback,
   }
 }
-
-const isRealApi = !!import.meta.env.VITE_API_URL
 
 export const useDetaiStore = defineStore('detai', () => {
   const danhSach = ref([])
@@ -101,6 +101,18 @@ export const useDetaiStore = defineStore('detai', () => {
     } finally { loading.value = false }
   }
 
+  async function capNhatDeTai(detaiId, payload) {
+    loading.value = true; error.value = null
+    try {
+      const res = await api.put(`/de-tai/${detaiId}`, payload)
+      _sync(detaiId, res.data)
+      return res.data
+    } catch (e) {
+      error.value = e.response?.data?.message ?? 'Không thể cập nhật đề tài.'
+      throw e
+    } finally { loading.value = false }
+  }
+
   async function guiHoSo(detaiId) {
     return runAction('guiHoSo', detaiId, async () => {
       const res = await api.post(`/de-tai/${detaiId}/gui-ho-so`)
@@ -110,26 +122,34 @@ export const useDetaiStore = defineStore('detai', () => {
 
   async function boSungHoSo(detaiId, payload) {
     return runAction('boSungHoSo', detaiId, async () => {
-      const url = isRealApi ? `/de-tai/${detaiId}/nop-bo-sung` : `/de-tai/${detaiId}/bo-sung`
-      const res = await api.post(url, payload)
+      const res = await api.post(`/de-tai/${detaiId}/nop-bo-sung`, payload)
+      return res.data
+    })
+  }
+
+  async function nopLaiThuyetMinh(detaiId) {
+    return runAction('nopLaiThuyetMinh', detaiId, async () => {
+      const res = await api.post(`/de-tai/${detaiId}/nop-lai-thuyet-minh`)
       return res.data
     })
   }
 
   async function dongYHopDong(detaiId, payload = {}) {
     return runAction('dongYHopDong', detaiId, async () => {
-      const url = isRealApi ? `/de-tai/${detaiId}/phan-hoi-hop-dong` : `/de-tai/${detaiId}/gv-dong-y-hop-dong`
-      const body = isRealApi ? { dongY: true, noiDungGhiChu: payload.noiDungGhiChu } : payload
-      const res = await api.post(url, body)
+      const res = await api.post(`/de-tai/${detaiId}/phan-hoi-hop-dong`, {
+        dongY: true,
+        noiDungGhiChu: payload.noiDungGhiChu,
+      })
       return res.data
     })
   }
 
   async function yeuCauChinhSuaHopDong(detaiId, payload) {
     return runAction('yeuCauChinhSuaHopDong', detaiId, async () => {
-      const url = isRealApi ? `/de-tai/${detaiId}/phan-hoi-hop-dong` : `/de-tai/${detaiId}/hop-dong/yeu-cau-chinh-sua`
-      const body = isRealApi ? { dongY: false, noiDungGhiChu: payload.noiDung ?? payload.noiDungGhiChu } : payload
-      const res = await api.post(url, body)
+      const res = await api.post(`/de-tai/${detaiId}/phan-hoi-hop-dong`, {
+        dongY: false,
+        noiDungGhiChu: payload.noiDung ?? payload.noiDungGhiChu,
+      })
       return res.data
     })
   }
@@ -137,24 +157,15 @@ export const useDetaiStore = defineStore('detai', () => {
   async function uploadFile(detaiId, file, loai = 'THUYET_MINH') {
     const formData = new FormData()
     formData.append('file', file)
-    if (!isRealApi) formData.append('loai', loai)
-    const res = isRealApi
-      ? await api.post('/files/upload', formData, { params: { deTaiId: detaiId, loai } })
-      : await api.post(`/de-tai/${detaiId}/tai-lieu`, formData)
-    if (isRealApi) await layChiTiet(detaiId)
-    else _sync(detaiId, res.data)
+    await api.post('/files/upload', formData, { params: { deTaiId: detaiId, loai } })
+    await layChiTiet(detaiId)
     await layCanActions(detaiId)
-    return res.data
   }
 
   async function xoaTaiLieu(detaiId, taiLieuId) {
-    if (isRealApi) {
-      throw new Error('Backend hien chua ho tro xoa tai lieu.')
-    }
-    const res = await api.delete(`/de-tai/${detaiId}/tai-lieu/${taiLieuId}`)
-    _sync(detaiId, res.data)
+    await api.delete(`/files/${taiLieuId}`)
+    await layChiTiet(detaiId)
     await layCanActions(detaiId)
-    return res.data
   }
 
   function _sync(id, updated) {
@@ -168,7 +179,7 @@ export const useDetaiStore = defineStore('detai', () => {
   return {
     danhSach, chiTiet, canActions, loading, error, actionLoading,
     deTaiDraft, deTaiChoBoSung,
-    layDanhSach, layChiTiet, layCanActions, taoDeTai,
-    guiHoSo, boSungHoSo, dongYHopDong, yeuCauChinhSuaHopDong, uploadFile, xoaTaiLieu,
+    layDanhSach, layChiTiet, layCanActions, taoDeTai, capNhatDeTai,
+    guiHoSo, boSungHoSo, nopLaiThuyetMinh, dongYHopDong, yeuCauChinhSuaHopDong, uploadFile, xoaTaiLieu,
   }
 })

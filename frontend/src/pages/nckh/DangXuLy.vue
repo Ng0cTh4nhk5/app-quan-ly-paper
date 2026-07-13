@@ -6,7 +6,7 @@ import { useNckhStore } from '@/stores/nckh.store'
 import { useToast } from '@/composables/useToast'
 import StatusBadge from '@/components/StatusBadge.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { normalizeContractStatus } from '@/mock/sopDGuards'
+import { normalizeContractStatus } from '@/utils/sopDGuards'
 import { Settings } from '@lucide/vue'
 
 const store = useNckhStore()

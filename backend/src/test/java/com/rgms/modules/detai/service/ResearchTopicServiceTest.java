@@ -217,7 +217,7 @@ class ResearchTopicServiceTest {
             stubUser(mockGv);
             stubTopic(TopicState.DRAFT);
             when(taiLieuRepository.existsByDeTaiIdAndLoaiFile(DE_TAI_ID, "THUYET_MINH")).thenReturn(true);
-            when(phanBienDeXuatRepository.countByDeTaiId(DE_TAI_ID)).thenReturn(1L);
+            when(phanBienDeXuatRepository.countByDeTaiId(DE_TAI_ID)).thenReturn(2L);
             when(fsmService.transition(DE_TAI_ID, TopicEvent.GV_GUI_HO_SO, GV_ID)).thenReturn(mockDeTai);
             stubMappedResponse();
 
@@ -234,7 +234,7 @@ class ResearchTopicServiceTest {
             stubUser(mockGv);
             stubTopic(TopicState.DRAFT);
             when(taiLieuRepository.existsByDeTaiIdAndLoaiFile(DE_TAI_ID, "THUYET_MINH")).thenReturn(true);
-            when(phanBienDeXuatRepository.countByDeTaiId(DE_TAI_ID)).thenReturn(1L);
+            when(phanBienDeXuatRepository.countByDeTaiId(DE_TAI_ID)).thenReturn(2L);
             BusinessException fsmError = new BusinessException("FSM_TERMINAL_STATE", "Trang thai ket thuc");
             when(fsmService.transition(DE_TAI_ID, TopicEvent.GV_GUI_HO_SO, GV_ID)).thenThrow(fsmError);
 

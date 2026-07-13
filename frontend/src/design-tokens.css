@@ -92,6 +92,19 @@
   --space-8:  32px;
   --space-10: 40px;
   --space-12: 48px;
+  --space-16: 64px;
+
+  /* Aliases for guideline compatibility (--sp-N) */
+  --sp-1:  var(--space-1);
+  --sp-2:  var(--space-2);
+  --sp-3:  var(--space-3);
+  --sp-4:  var(--space-4);
+  --sp-5:  var(--space-5);
+  --sp-6:  var(--space-6);
+  --sp-8:  var(--space-8);
+  --sp-10: var(--space-10);
+  --sp-12: var(--space-12);
+  --sp-16: var(--space-16);
 
   /* ── BORDER RADIUS ────────────────────────────── */
   --radius-sm:  4px;

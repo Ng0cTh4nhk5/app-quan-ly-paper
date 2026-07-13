@@ -6,7 +6,7 @@ import {
   enforceContractActionGuards,
   hasOpenContractFeedback,
   normalizeContractStatus,
-} from '@/mock/sopDGuards'
+} from '@/utils/sopDGuards'
 
 const EMPTY_ACTIONS = {
   tiepNhan: false,
@@ -39,7 +39,6 @@ function fallbackActions(dt) {
   }
 }
 
-const isRealApi = !!import.meta.env.VITE_API_URL
 const pbDecisionMap = {
   CHAP_THUAN: 'CHAP_NHAN',
   CHO_CHINH_SUA: 'YEU_CAU_SUA',
@@ -182,13 +181,13 @@ export const useNckhStore = defineStore('nckh', () => {
   function xetDuyetPB(id, payload) {
     return runAction('xetDuyetPB', id, async () => {
       const rawDecision = payload.quyetDinh ?? payload.ketQua
-      const realPayload = {
+      const body = {
         ...payload,
         quyetDinh: pbDecisionMap[rawDecision] ?? rawDecision,
         noiDungFeedback: payload.noiDungFeedback ?? payload.ghiChu,
         deadlineSua: payload.deadlineSua,
       }
-      const res = await api.post(`/de-tai/${id}/xet-duyet-pb`, isRealApi ? realPayload : payload)
+      const res = await api.post(`/de-tai/${id}/xet-duyet-pb`, body)
       return res.data
     })
   }
@@ -198,7 +197,7 @@ export const useNckhStore = defineStore('nckh', () => {
       const today = new Date()
       const end = new Date(today)
       end.setMonth(end.getMonth() + Number(payload.thoiGian ?? 12))
-      const realPayload = {
+      const body = {
         kinhPhi: payload.kinhPhi,
         ngayBatDau: payload.ngayBatDau ?? today.toISOString().slice(0, 10),
         ngayKetThuc: payload.ngayKetThuc ?? end.toISOString().slice(0, 10),
@@ -206,29 +205,17 @@ export const useNckhStore = defineStore('nckh', () => {
         // của người soạn hợp đồng, không nên auto-default 50%.
         tyLeTamUng: payload.tyLeTamUng ?? 0,
       }
-      const url = isRealApi ? `/de-tai/${id}/soan-hop-dong` : `/de-tai/${id}/hop-dong/soan`
-      const res = await api.post(url, isRealApi ? realPayload : payload)
+      const res = await api.post(`/de-tai/${id}/soan-hop-dong`, body)
       return res.data
     })
   }
 
   function kyHopDong(id, payload = {}) {
     return runAction('kyHopDong', id, async () => {
-      let res
-      if (isRealApi) {
-        const data = new FormData()
-        if (payload.fileScan) data.append('fileScan', payload.fileScan)
-        const ngayKy = payload.ngayKy ?? new Date().toISOString().slice(0, 10)
-        res = await api.post(`/de-tai/${id}/ky-hop-dong`, data, { params: { ngayKy } })
-      } else {
-        let body = payload
-        if (payload.fileScan && typeof FormData !== 'undefined') {
-          body = new FormData()
-          body.append('fileScan', payload.fileScan)
-          body.append('ngayKy', payload.ngayKy)
-        }
-        res = await api.post(`/de-tai/${id}/ky-hop-dong`, body)
-      }
+      const data = new FormData()
+      if (payload.fileScan) data.append('fileScan', payload.fileScan)
+      const ngayKy = payload.ngayKy ?? new Date().toISOString().slice(0, 10)
+      const res = await api.post(`/de-tai/${id}/ky-hop-dong`, data, { params: { ngayKy } })
       return res.data
     })
   }

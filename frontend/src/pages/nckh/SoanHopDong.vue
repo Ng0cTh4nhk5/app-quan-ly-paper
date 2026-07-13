@@ -9,7 +9,7 @@ import {
   CONTRACT_DRAFTABLE_STATUSES,
   MAX_ADVANCE_RATE_PERCENT,
   normalizeContractStatus,
-} from '@/mock/sopDGuards'
+} from '@/utils/sopDGuards'
 import { AlertCircle, ArrowLeft, FileText, PenTool } from '@lucide/vue'
 
 const route = useRoute()
