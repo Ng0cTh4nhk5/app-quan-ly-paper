@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useDetaiStore } from '@/stores/detai.store'
 import { useAuthStore } from '@/stores/auth.store'
 import StatusBadge from '@/components/StatusBadge.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { List, Clock, Settings, Search, Sparkles, Plus, TriangleAlert, FileEdit, Paperclip } from '@lucide/vue'
 
 const store  = useDetaiStore()
@@ -97,11 +98,14 @@ const greeting = computed(() => {
           <div v-for="i in 3" :key="i" class="skeleton" style="height: 52px; margin-bottom: 8px"></div>
         </div>
 
-        <div v-else-if="recent.length === 0" class="card-body empty-dash">
-          <FileEdit :size="32" style="color: var(--color-text-muted)" />
-          <p>Chưa có đề tài nào.
-            <button class="btn-link" @click="router.push('/gv/de-tai/tao-moi')">Tạo ngay</button>
-          </p>
+        <div v-else-if="recent.length === 0" class="card-body">
+          <EmptyState
+            :icon="FileEdit"
+            title="Chưa có đề tài nào"
+            message="Bắt đầu bằng cách đăng ký đề tài nghiên cứu mới."
+            action="Đăng ký ngay"
+            @action="router.push('/gv/de-tai/tao-moi')"
+          />
         </div>
 
         <div v-else class="recent-list">

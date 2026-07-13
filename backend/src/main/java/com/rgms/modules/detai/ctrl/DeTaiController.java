@@ -2,6 +2,7 @@ package com.rgms.modules.detai.ctrl;
 
 import com.rgms.modules.detai.dto.DeTaiDetailResponse;
 import com.rgms.modules.detai.dto.DeTaiResponse;
+import com.rgms.modules.detai.dto.CapNhatDeTaiRequest;
 import com.rgms.modules.detai.dto.KetQuaPBRequest;
 import com.rgms.modules.detai.dto.LapToPhanBienRequest;
 import com.rgms.modules.detai.dto.PageDeTaiResponse;
@@ -36,9 +37,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,6 +50,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @Validated
 @RestController
@@ -77,6 +81,27 @@ public class DeTaiController {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails currentUser) {
         DeTaiResponse response = topicService.taoDeTai(request, currentUser.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('GIANG_VIEN')")
+    @Operation(
+            summary = "GV cập nhật thông tin cơ bản đề tài",
+            description = "Cập nhật tên, mô tả, lĩnh vực của đề tài khi còn ở trạng thái DRAFT. Chỉ chủ nhiệm đề tài mới được phép thao tác."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cập nhật thành công",
+                    content = @Content(schema = @Schema(implementation = DeTaiResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Dữ liệu đầu vào không hợp lệ"),
+            @ApiResponse(responseCode = "403", description = "Không phải chủ nhiệm đề tài hoặc không có vai trò GIANG_VIEN"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy đề tài"),
+            @ApiResponse(responseCode = "409", description = "Đề tài không còn ở trạng thái DRAFT")
+    })
+    public ResponseEntity<DeTaiResponse> capNhatDeTai(
+            @Parameter(description = "ID đề tài cần cập nhật", required = true) @PathVariable Long id,
+            @Valid @RequestBody CapNhatDeTaiRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails currentUser) {
+        return ResponseEntity.ok(topicService.capNhatDeTai(id, request, currentUser.getId()));
     }
 
     @GetMapping
@@ -393,5 +418,40 @@ public class DeTaiController {
             @RequestParam("ngayKy") @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayKy,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails currentUser) {
         return ResponseEntity.ok(topicService.kyHopDong(id, fileScan, ngayKy, currentUser.getId()));
+    }
+
+    @GetMapping("/{id}/can-actions")
+    @Operation(
+            summary = "Lấy danh sách hành động khả dụng",
+            description = "Trả về map hành động mà user hiện tại có thể thực hiện trên đề tài, dựa trên trạng thái đề tài và vai trò người dùng."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lấy danh sách hành động thành công"),
+            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập hoặc token không hợp lệ"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy đề tài")
+    })
+    public ResponseEntity<Map<String, Boolean>> canActions(
+            @Parameter(description = "ID đề tài", required = true) @PathVariable Long id,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails currentUser) {
+        return ResponseEntity.ok(topicService.getCanActions(id, currentUser));
+    }
+
+    @PostMapping("/{id}/rut-de-tai")
+    @PreAuthorize("hasRole('GIANG_VIEN')")
+    @Operation(
+            summary = "GV rút đề tài",
+            description = "Chủ nhiệm đề tài rút đề tài ra khỏi quy trình xử lý. Áp dụng cho các trạng thái cho phép rút theo FSM."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Rút đề tài thành công",
+                    content = @Content(schema = @Schema(implementation = DeTaiResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Không phải chủ nhiệm đề tài"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy đề tài"),
+            @ApiResponse(responseCode = "409", description = "Trạng thái đề tài không cho phép rút")
+    })
+    public ResponseEntity<DeTaiResponse> rutDeTai(
+            @Parameter(description = "ID đề tài cần rút", required = true) @PathVariable Long id,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails currentUser) {
+        return ResponseEntity.ok(topicService.gvRutDeTai(id, currentUser.getId()));
     }
 }

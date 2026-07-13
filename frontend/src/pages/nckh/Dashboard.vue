@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useNckhStore } from '@/stores/nckh.store'
 import { useAuthStore } from '@/stores/auth.store'
 import StatusBadge from '@/components/StatusBadge.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { Sparkles, Inbox, Settings, CheckCircle, List, TriangleAlert, CircleAlert, Star } from '@lucide/vue'
 
 const store = useNckhStore()
@@ -89,9 +90,12 @@ const greeting = computed(() => {
           <div v-for="i in 3" :key="i" class="skeleton" style="height:52px;margin-bottom:8px"></div>
         </div>
 
-        <div v-else-if="urgent.length === 0" class="card-body empty-msg">
-          <span><Star :size="32" style="color: var(--color-amber)" /></span>
-          <p>Hộp thư đến trống. Không có hồ sơ nào cần xử lý.</p>
+        <div v-else-if="urgent.length === 0" class="card-body">
+          <EmptyState
+            :icon="Star"
+            title="Hộp thư đến trống"
+            message="Không có hồ sơ nào cần xử lý."
+          />
         </div>
 
         <div v-else class="recent-list">
@@ -120,9 +124,11 @@ const greeting = computed(() => {
             <h3 class="card-title">Đang xử lý</h3>
             <button class="btn btn-ghost btn-sm" @click="router.push('/nckh/dang-xu-ly')">Chi tiết →</button>
           </div>
-          <div v-if="inProcess.length === 0" class="card-body empty-msg">
-            <span><Inbox :size="32" style="color: var(--color-text-muted)" /></span>
-            <p>Không có hồ sơ nào đang xử lý.</p>
+          <div v-if="inProcess.length === 0" class="card-body">
+            <EmptyState
+              :icon="Inbox"
+              title="Không có hồ sơ nào đang xử lý"
+            />
           </div>
           <div v-else class="recent-list">
             <div

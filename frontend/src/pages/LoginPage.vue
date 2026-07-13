@@ -2,61 +2,12 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
-import { User, Building, Search, Info } from '@lucide/vue'
 
 const auth   = useAuthStore()
 const router = useRouter()
 const form = reactive({ username: '', password: '' })
 const loginError = ref('')
 const loggingIn = ref(false)
-
-const DEMO_ACCOUNTS = [
-  {
-    key: 'gv_a',
-    label: 'Giảng Viên A',
-    sub: 'TS. Nguyễn Văn Anh — Khoa CNTT',
-    icon: User,
-    role: 'Giảng viên',
-    color: 'var(--color-accent)',
-  },
-  {
-    key: 'gv_b',
-    label: 'Giảng Viên B',
-    sub: 'PGS. Trần Thị Bình — Khoa Toán',
-    icon: User,
-    role: 'Giảng viên',
-    color: 'var(--color-accent)',
-  },
-  {
-    key: 'nckh',
-    label: 'Nhân viên P.NCKH',
-    sub: 'CN. Lê Văn Cường',
-    icon: Building,
-    role: 'P.NCKH',
-    color: 'var(--color-amber)',
-  },
-  {
-    key: 'pb_1',
-    label: 'Phản Biện 1',
-    sub: 'TS. Phạm Quang Đức',
-    icon: Search,
-    role: 'Tổ Phản Biện',
-    color: '#0284C7',
-  },
-  {
-    key: 'pb_2',
-    label: 'Phản Biện 2',
-    sub: 'PGS. Vũ Thị Em',
-    icon: Search,
-    role: 'Tổ Phản Biện',
-    color: '#0284C7',
-  },
-]
-
-function loginAs(key) {
-  auth.loginAs(key)
-  router.push('/')
-}
 
 async function login() {
   loginError.value = ''
@@ -65,7 +16,7 @@ async function login() {
     await auth.login(form)
     router.push('/')
   } catch (error) {
-    loginError.value = error.response?.data?.message ?? error.message ?? 'Dang nhap that bai.'
+    loginError.value = error.response?.data?.message ?? error.message ?? 'Đăng nhập thất bại.'
   } finally {
     loggingIn.value = false
   }
@@ -82,31 +33,13 @@ async function login() {
       <!-- Left: brand panel -->
       <div class="login-brand">
         <div class="brand-logo">
-          <span class="brand-icon">R</span>
-          <span class="brand-name">RGMS</span>
+          <img
+            src="/logo.png"
+            alt="Trường Đại học Mở TP. Hồ Chí Minh"
+            class="brand-logo-image"
+          />
         </div>
-        <h1 class="brand-title">Hệ thống Quản lý Nghiên cứu Khoa học</h1>
-        <p class="brand-desc">
-          Quản lý toàn bộ vòng đời đề tài NCKH — từ đăng ký, thẩm định, phản biện đến ký hợp đồng và nghiệm thu.
-        </p>
-        <div class="brand-features">
-          <div class="feature-item">
-            <span class="feature-dot"></span>
-            <span>Theo dõi tiến độ theo thời gian thực</span>
-          </div>
-          <div class="feature-item">
-            <span class="feature-dot"></span>
-            <span>Quy trình phê duyệt tự động hóa</span>
-          </div>
-          <div class="feature-item">
-            <span class="feature-dot"></span>
-            <span>Quản lý phản biện & hội đồng</span>
-          </div>
-          <div class="feature-item">
-            <span class="feature-dot"></span>
-            <span>Báo cáo & thống kê tổng hợp</span>
-          </div>
-        </div>
+        <h1 class="brand-title">Hệ thống Quản lý Đề tài NCKH cấp cơ sở</h1>
       </div>
 
       <!-- Right: login panel -->
@@ -115,57 +48,31 @@ async function login() {
           <!-- Header -->
           <div class="login-card-header">
             <div class="login-logo">
-              <span class="login-logo-icon">R</span>
-              <span class="login-logo-name">RGMS</span>
+              <img
+                src="/logo.png"
+                alt="Trường Đại học Mở TP. Hồ Chí Minh"
+                class="login-logo-image"
+              />
             </div>
-            <div class="login-badge">{{ auth.isMockMode ? 'Mockup Mode' : 'API Mode' }}</div>
           </div>
 
           <h2 class="login-title">Đăng nhập hệ thống</h2>
-          <p class="login-sub">Chọn tài khoản demo để trải nghiệm từng vai trò</p>
+          <p class="login-sub">Sử dụng tài khoản được cấp để đăng nhập</p>
 
-          <form v-if="!auth.isMockMode" class="real-login-form" @submit.prevent="login">
+          <form class="real-login-form" @submit.prevent="login">
             <div class="form-group">
               <label class="form-label">Tài khoản</label>
-              <input v-model="form.username" class="form-input" type="text" autocomplete="username" required />
+              <input v-model="form.username" class="form-input" type="text" autocomplete="username" placeholder="Nhập tên tài khoản..." required />
             </div>
             <div class="form-group">
               <label class="form-label">Mật khẩu</label>
-              <input v-model="form.password" class="form-input" type="password" autocomplete="current-password" required />
+              <input v-model="form.password" class="form-input" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu..." required />
             </div>
             <div v-if="loginError" class="alert alert-danger">{{ loginError }}</div>
             <button class="btn btn-primary w-full" type="submit" :disabled="loggingIn">
               {{ loggingIn ? 'Đang đăng nhập...' : 'Đăng nhập' }}
             </button>
           </form>
-
-          <!-- Demo accounts -->
-          <div v-else class="demo-accounts">
-            <button
-              v-for="acc in DEMO_ACCOUNTS"
-              :key="acc.key"
-              class="demo-card"
-              :style="{ '--acc-color': acc.color }"
-              @click="loginAs(acc.key)"
-            >
-              <div class="demo-avatar" :style="{ background: acc.color, color: '#fff' }">
-                <component :is="acc.icon" :size="18" />
-              </div>
-              <div class="demo-info">
-                <div class="demo-name">{{ acc.label }}</div>
-                <div class="demo-sub">{{ acc.sub }}</div>
-              </div>
-              <div class="demo-role-chip" :style="{ color: acc.color, borderColor: acc.color + '40', background: acc.color + '12' }">
-                {{ acc.role }}
-              </div>
-            </button>
-          </div>
-
-          <!-- Note -->
-          <div v-if="auth.isMockMode" class="login-note">
-            <span class="note-icon"><Info :size="14" /></span>
-            <span>Nhấn <kbd>F5</kbd> để reset toàn bộ dữ liệu về trạng thái ban đầu</span>
-          </div>
         </div>
       </div>
     </div>
@@ -225,19 +132,10 @@ async function login() {
   align-items: center;
   gap: var(--space-3);
 }
-.brand-icon {
-  width: 44px; height: 44px;
-  background: var(--color-primary);
-  color: #fff;
-  border-radius: var(--radius-lg);
-  display: flex; align-items: center; justify-content: center;
-  font: 700 22px/1 var(--font-sans);
-  border: 1px solid rgba(255,255,255,0.1);
-}
-.brand-name {
-  font: 700 24px/1 var(--font-sans);
-  color: var(--color-text-primary);
-  letter-spacing: -0.03em;
+.brand-logo-image {
+  height: 64px;
+  width: auto;
+  display: block;
 }
 
 .brand-title {
@@ -298,28 +196,10 @@ async function login() {
 .login-logo {
   display: flex; align-items: center; gap: var(--space-2);
 }
-.login-logo-icon {
-  width: 28px; height: 28px;
-  background: var(--color-primary);
-  color: #fff;
-  border-radius: var(--radius-sm);
-  display: flex; align-items: center; justify-content: center;
-  font: 700 14px/1 var(--font-sans);
-}
-.login-logo-name {
-  font: 700 16px/1 var(--font-sans);
-  color: var(--color-text-primary);
-  letter-spacing: -0.02em;
-}
-
-.login-badge {
-  font: var(--text-caption);
-  font-weight: 600;
-  background: var(--color-warning-bg);
-  color: var(--color-warning-text);
-  border: 1px solid var(--color-warning-border);
-  border-radius: 999px;
-  padding: 2px 10px;
+.login-logo-image {
+  height: 48px;
+  width: auto;
+  display: block;
 }
 
 .login-title {
@@ -334,81 +214,11 @@ async function login() {
   margin-bottom: var(--space-5);
 }
 
-/* ── DEMO ACCOUNTS ────────────────────────────────── */
-.demo-accounts {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: var(--space-5);
-}
-
+/* ── LOGIN FORM ──────────────────────────────────── */
 .real-login-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   margin-bottom: var(--space-5);
-}
-
-.demo-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
-}
-.demo-card:hover {
-  border-color: var(--acc-color);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc-color) 12%, transparent);
-  transform: translateX(2px);
-}
-
-.demo-avatar {
-  width: 36px; height: 36px;
-  border-radius: var(--radius-md);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-  opacity: 0.9;
-}
-
-.demo-info { flex: 1; min-width: 0; }
-.demo-name { font: var(--text-h4); color: var(--color-text-primary); }
-.demo-sub  { font: var(--text-sm); color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.demo-role-chip {
-  font: var(--text-caption);
-  font-weight: 600;
-  border: 1px solid;
-  border-radius: 999px;
-  padding: 2px 8px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-/* ── NOTE ─────────────────────────────────────────── */
-.login-note {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-surface-alt);
-  border-radius: var(--radius-md);
-  font: var(--text-sm);
-  color: var(--color-text-muted);
-}
-.note-icon { font-size: 14px; flex-shrink: 0; }
-kbd {
-  display: inline-block;
-  padding: 0 5px;
-  font: var(--text-mono);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  font-size: 11px;
 }
 </style>

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref } from 'vue'
 import { FileText, FileBadge2, File, Download, X, UploadCloud } from '@lucide/vue'
 import { useToast } from '@/composables/useToast'
@@ -19,8 +19,8 @@ function handleFiles(rawFiles) {
     if (f.size > props.maxMb * 1024 * 1024) {
       toast.add({
         severity: 'warning',
-        summary: 'File quá dung lượng',
-        detail: `File "${f.name}" vượt quá ${props.maxMb}MB`,
+        summary: 'File qu� dung lu?ng',
+        detail: `File "${f.name}" vu?t qu� ${props.maxMb}MB`,
       })
       continue
     }
@@ -57,8 +57,8 @@ function fileIcon(name) {
       <div class="fu-icon">
         <UploadCloud :size="24" stroke-width="1.5" />
       </div>
-      <p class="fu-hint">Kéo thả hoặc <span class="fu-link">chọn file</span></p>
-      <p class="fu-sub">{{ accept }} · tối đa {{ maxMb }}MB</p>
+      <p class="fu-hint">K�o th? ho?c <span class="fu-link">ch?n file</span></p>
+      <p class="fu-sub">{{ accept }} � t?i da {{ maxMb }}MB</p>
     </label>
 
     <!-- File list -->
@@ -71,12 +71,12 @@ function fileIcon(name) {
           <span class="fu-item-name">{{ f.tenFile }}</span>
           <span class="fu-item-size">{{ f.size }}</span>
         </div>
-        <a :href="f.downloadUrl" target="_blank" class="fu-item-btn" title="Tải về"><Download :size="14" /></a>
-        <button v-if="!readonly" class="fu-item-del" @click="$emit('remove', f.id)" title="Xóa"><X :size="14" /></button>
+        <a :href="f.downloadUrl" target="_blank" class="fu-item-btn" title="T?i v?"><Download :size="14" /></a>
+        <button v-if="!readonly" class="fu-item-del" @click="$emit('remove', f.id)" title="X�a"><X :size="14" /></button>
       </li>
     </ul>
 
-    <p v-else-if="readonly" class="fu-empty">Chưa có tài liệu nào.</p>
+    <p v-else-if="readonly" class="fu-empty">Chua c� t�i li?u n�o.</p>
   </div>
 </template>
 

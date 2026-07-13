@@ -20,6 +20,7 @@ public class DeTaiDetailResponse {
     private String tenDeTai;
     private String trangThai;
     private String chuNhiem;
+    private Long chuNhiemId;
     private LocalDateTime updatedAt;
     private String moTa;
     private String linhVuc;
@@ -27,4 +28,14 @@ public class DeTaiDetailResponse {
     private String kyNckh;
     private List<TaiLieuResponse> taiLieu;
     private List<AuditLogEntry> auditLog;
+
+    // B5-1: Guard fields cho FE sopDGuards.js
+    /** Trạng thái hợp đồng: CHO_PHAN_HOI, CHO_KY, DA_KY, YEU_CAU_SUA, v.v. */
+    private String hopDongStatus;
+    /** GV đã đồng ý HĐ? (HD trạng thái CHO_KY hoặc DA_KY) */
+    private Boolean gvDaDongYHopDong;
+    /** Có feedback HOP_DONG đang CHO_XU_LY? */
+    private Boolean hopDongFeedback;
+    /** Danh sách thành viên tổ phản biện (id, hoTen, ketQua, nhanXet) */
+    private List<ToPhanBienMemberResponse> toPhanBien;
 }

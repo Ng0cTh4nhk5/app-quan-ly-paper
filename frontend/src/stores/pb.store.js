@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/api/axios'
 
-const isRealApi = !!import.meta.env.VITE_API_URL
 const pbResultMap = {
   CHAP_THUAN: 'CHAP_NHAN',
   YEU_CAU_CHINH_SUA: 'CAN_SUA',
@@ -61,17 +60,26 @@ export const usePBStore = defineStore('pb', () => {
   }
 
   async function nopKetQua(detaiId, payload) {
-    const rawResult = payload.ketQua ?? payload.deXuat
-    const realPayload = {
-      ketQua: pbResultMap[rawResult] ?? rawResult,
-      nhanXet: payload.nhanXet,
+    loading.value = true
+    error.value = null
+    try {
+      const rawResult = payload.ketQua ?? payload.deXuat
+      const body = {
+        ketQua: pbResultMap[rawResult] ?? rawResult,
+        nhanXet: payload.nhanXet,
+      }
+      const res = await api.post(`/de-tai/${detaiId}/nop-ket-qua-pb`, body)
+      // FIXED(TL): Dùng String() thay vì parseInt để tránh Long ID overflow.
+      danhSachAssigned.value = danhSachAssigned.value.filter(d => String(d.id) !== String(detaiId))
+      chiTiet.value = res.data
+      await layCanActions(detaiId)
+      return res.data
+    } catch (e) {
+      error.value = e.response?.data?.message ?? 'Không thể nộp kết quả phản biện.'
+      throw e
+    } finally {
+      loading.value = false
     }
-    const res = await api.post(`/de-tai/${detaiId}/nop-ket-qua-pb`, isRealApi ? realPayload : payload)
-    // FIXED(TL): Dùng String() thay vì parseInt để tránh Long ID overflow.
-    danhSachAssigned.value = danhSachAssigned.value.filter(d => String(d.id) !== String(detaiId))
-    chiTiet.value = res.data
-    await layCanActions(detaiId)
-    return res.data
   }
 
   return {

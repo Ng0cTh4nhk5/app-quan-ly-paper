@@ -14,4 +14,7 @@ public interface ThanhVienToPhanBienRepository extends JpaRepository<ThanhVienTo
 
     @EntityGraph(attributePaths = {"toPhanBien", "nguoiDung"})
     List<ThanhVienToPhanBien> findByToPhanBien_Id(Long toPhanBienId);
+
+    @EntityGraph(attributePaths = {"toPhanBien", "nguoiDung"})
+    List<ThanhVienToPhanBien> findByToPhanBien_DeTaiId(Long deTaiId);
 }
